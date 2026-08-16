@@ -17,7 +17,7 @@ It equips AI assistants with full-duplex control over financial markets—rangin
 1. [Key Features](#-key-features)
 2. [The Trader's Journey (Workflow)](#-the-traders-journey-workflow)
 3. [System Architecture](#-system-architecture)
-4. [MCP Interface Specification (57 Tools)](#-mcp-interface-specification)
+4. [MCP Interface Specification (58 Tools)](#-mcp-interface-specification)
 5. [Institutional & ICT Strategy Models](#-institutional--ict-strategy-models)
 6. [Trading Credit Score Engine](#-trading-credit-score-engine-v40)
 7. [Smart Money Concepts (SMC) Analyzer](#-smart-money-concepts-smc-analyzer)
@@ -127,7 +127,7 @@ graph TD
 
 ## 📋 MCP Interface Specification
 
-### 1. Tools (57 Callable Functions)
+### 1. Tools (58 Callable Functions)
 
 #### 💼 Account & Terminal
 | Tool Name | Description | Parameters |
@@ -149,6 +149,7 @@ graph TD
 |:---|:---|:---|
 | `mt5_analyze_technical` | Calculate EMAs (20, 50, 200), RSI, MACD, ATR, Bollinger Bands. | `symbol: str`, `timeframe: str = "M15"`, `count: int = 100` |
 | `mt5_analyze_smc` | Full SMC analysis: BOS, CHoCH, Order Blocks, FVGs, OTE levels. | `symbol: str`, `timeframe: str = "M15"`, `count: int = 100` |
+| `mt5_generate_candlestick_chart` | **SMC Visual Chart Renderer**: Generates high-res dark-themed `.png` candlestick chart image with FVG, Order Blocks, and EMAs overlaid. | `symbol: str = "XAUUSD"`, `timeframe: str = "M15"`, `count: int = 80`, `overlay_smc: bool = True`, `overlay_ema: bool = True` |
 
 #### 👑 Institutional & ICT Strategy Tools (New)
 | Tool Name | Description | Parameters |

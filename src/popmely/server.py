@@ -21,6 +21,7 @@ import popmely.tools.institutional as inst_tool
 import popmely.tools.journal as journal_tool
 import popmely.tools.db_tools as db_tool
 import popmely.tools.news as news_tool
+import popmely.tools.chart as chart_tool
 
 # Setup standard logging to stderr
 logging.basicConfig(
@@ -94,6 +95,25 @@ def mt5_analyze_technical(symbol: str = "XAUUSD", timeframe: str = "M15", count:
 def mt5_analyze_smc(symbol: str = "XAUUSD", timeframe: str = "M15", count: int = 150) -> dict:
     """Perform Smart Money Concept (SMC) analysis: Break of Structure (BOS), Change of Character (CHoCH), Order Blocks (OB), Fair Value Gaps (FVG), Liquidity Pools (EQH/EQL), and Premium vs Discount zones."""
     return smc_tool.analyze_smc(symbol, timeframe, count)
+
+@mcp.tool()
+def mt5_generate_candlestick_chart(
+    symbol: str = "XAUUSD",
+    timeframe: str = "M15",
+    count: int = 80,
+    overlay_smc: bool = True,
+    overlay_ema: bool = True,
+    save_path: Optional[str] = None
+) -> dict:
+    """Generate and save high-resolution dark-themed candlestick chart image (.png) with Fair Value Gaps (FVG), Order Blocks (OB), and EMAs overlaid."""
+    return chart_tool.generate_candlestick_chart(
+        symbol=symbol,
+        timeframe=timeframe,
+        count=count,
+        overlay_smc=overlay_smc,
+        overlay_ema=overlay_ema,
+        save_path=save_path
+    )
 
 # =====================================================================
 # 4. BACKTEST ENGINE TOOLS
