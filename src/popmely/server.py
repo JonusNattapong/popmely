@@ -68,6 +68,16 @@ def mt5_get_candles(symbol: str = "XAUUSD", timeframe: str = "M15", count: int =
     """Get historical OHLCV candles for a symbol. Timeframe: 'M1', 'M5', 'M15', 'M30', 'H1', 'H4', 'D1'. Count: 1-500."""
     return market_tool.get_candles(symbol, timeframe, count)
 
+@mcp.tool()
+def mt5_get_candles_range(
+    symbol: str = "XAUUSD",
+    timeframe: str = "M15",
+    start_time: str = "2026-08-01",
+    end_time: Optional[str] = None
+) -> dict:
+    """Get historical OHLCV candles and period price change statistics between specific dates/times (e.g. '2026-08-01' to '2026-08-14 18:00')."""
+    return market_tool.get_candles_range(symbol, timeframe, start_time, end_time)
+
 # =====================================================================
 # 3. TECHNICAL & SMC ANALYSIS TOOLS
 # =====================================================================
@@ -341,6 +351,15 @@ def mt5_cancel_all_pending_orders(symbol: Optional[str] = None) -> dict:
 def mt5_get_trade_history(days: int = 7, symbol: Optional[str] = None) -> dict:
     """Get closed trade deals and profit history for the past N days."""
     return trading_tool.get_trade_history(days, symbol)
+
+@mcp.tool()
+def mt5_get_trade_history_range(
+    start_time: str = "2026-08-01",
+    end_time: Optional[str] = None,
+    symbol: Optional[str] = None
+) -> dict:
+    """Get closed trade deals, win/loss stats, and realized PnL between specific dates (e.g. '2026-08-01' to '2026-08-15')."""
+    return trading_tool.get_trade_history_range(start_time, end_time, symbol)
 
 # =====================================================================
 # 7. AUTONOMOUS AGENT TOOLS

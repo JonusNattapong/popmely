@@ -93,7 +93,7 @@ graph TD
 
 ## 📋 MCP Interface Specification
 
-### 1. Tools (42 Callable Functions)
+### 1. Tools (44 Callable Functions)
 
 #### 💼 Account & Terminal
 | Tool Name | Description | Parameters |
@@ -107,7 +107,8 @@ graph TD
 | `mt5_get_quote` | Fetch real-time Bid, Ask, Spread, and timestamps. | `symbol: str = "XAUUSD"` |
 | `mt5_get_symbol_info` | Get contract sizes, digits, point size, min/max volume. | `symbol: str = "XAUUSD"` |
 | `mt5_search_symbols` | Search broker's tradable asset database by keyword. | `query: str = "XAU"` |
-| `mt5_get_candles` | Retrieve historical OHLCV candles across standard timeframes. | `symbol: str`, `timeframe: str = "M15"`, `count: int = 100` |
+| `mt5_get_candles` | Retrieve recent historical OHLCV candles across standard timeframes. | `symbol: str`, `timeframe: str = "M15"`, `count: int = 100` |
+| `mt5_get_candles_range` | **Date/Time Range Candles**: Fetch OHLCV candles and period price change % between specific dates/hours. | `symbol: str`, `timeframe: str = "M15"`, `start_time: str`, `end_time: Optional[str] = None` |
 
 #### 📈 Technical & SMC Analysis
 | Tool Name | Description | Parameters |
@@ -152,7 +153,8 @@ graph TD
 | `mt5_get_pending_orders` | List all active pending orders in terminal. | `symbol: str = ""` |
 | `mt5_cancel_pending_order` | Cancel a single pending order by ticket ID. | `ticket: int` |
 | `mt5_cancel_all_pending_orders` | Cancel all active pending orders across terminal in one click. | `symbol: str = ""` |
-| `mt5_get_trade_history` | Retrieve closed trade logs and historical deals. | `days: int = 7` |
+| `mt5_get_trade_history` | Retrieve closed trade logs and historical deals for past N days. | `days: int = 7` |
+| `mt5_get_trade_history_range` | **Date Range PnL & Deals**: Retrieve closed trades and win rate stats between specific dates. | `start_time: str`, `end_time: Optional[str] = None`, `symbol: Optional[str] = None` |
 
 #### 🤖 Autonomous Agent Management
 | Tool Name | Description | Parameters |

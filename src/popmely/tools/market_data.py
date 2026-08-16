@@ -128,3 +128,77 @@ def get_candles(symbol: str, timeframe: str = "M15", count: int = 50) -> Dict[st
         "count": len(candles),
         "candles": candles
     }
+
+def get_candles_range(
+    symbol: str = "XAUUSD",
+    timeframe: str = "M15",
+    start_time: str = "2026-08-01",
+    end_time: Optional[str] = None
+) -> Dict[str, Any]:
+    """Get historical OHLCV candles between a specific start and end date/time (e.g. '2026-08-01' to '2026-08-14 18:00')."""
+    if not MT5ConnectionManager.ensure_connected():
+        return {"status": "error", "message": "MT5 not connected"}
+
+    tf = TIMEFRAME_MAP.get(timeframe.upper())
+    if tf is None:
+        return {"status": "error", "message": f"Invalid timeframe '{timeframe}'. Valid options: {list(TIMEFRAME_MAP.keys())}"}
+
+    if not mt5.symbol_select(symbol, True):
+        return {"status": "error", "message": f"Failed to select symbol '{symbol}'"}
+
+    try:
+        # Parse start date
+        dt_from = pd.to_datetime(start_time).to_pydatetime()
+        # Parse end date (default to now if omitted)
+        dt_to = pd.to_datetime(end_time).to_pydatetime() if end_time else datetime.now()
+    except Exception as e:
+        return {"status": "error", "message": f"Invalid date format: {e}. Use 'YYYY-MM-DD' or 'YYYY-MM-DD HH:MM'"}
+
+    rates = mt5.copy_rates_range(symbol, tf, dt_from, dt_to)
+    if rates is None or len(rates) == 0:
+        return {
+            "status": "warning",
+            "message": f"No candles found for '{symbol}' between {start_time} and {end_time or 'now'}",
+            "symbol": symbol,
+            "timeframe": timeframe,
+            "count": 0,
+            "candles": []
+        }
+
+    df = pd.DataFrame(rates)
+    df['time'] = pd.to_datetime(df['time'], unit='s')
+
+    candles = []
+    for _, row in df.iterrows():
+        candles.append({
+            "time": row['time'].isoformat(),
+            "open": round(float(row['open']), 5),
+            "high": round(float(row['high']), 5),
+            "low": round(float(row['low']), 5),
+            "close": round(float(row['close']), 5),
+            "tick_volume": int(row['tick_volume'])
+        })
+
+    period_open = float(df['open'].iloc[0])
+    period_close = float(df['close'].iloc[-1])
+    period_high = float(df['high'].max())
+    period_low = float(df['low'].min())
+    change_pct = round(((period_close - period_open) / period_open) * 100, 2)
+
+    return {
+        "status": "success",
+        "symbol": symbol,
+        "timeframe": timeframe,
+        "start_time": dt_from.isoformat(),
+        "end_time": dt_to.isoformat(),
+        "count": len(candles),
+        "summary": {
+            "period_open": period_open,
+            "period_close": period_close,
+            "period_high": period_high,
+            "period_low": period_low,
+            "change_percent": f"{change_pct}%",
+            "total_volume": int(df['tick_volume'].sum())
+        },
+        "candles": candles
+    }

@@ -661,3 +661,45 @@ def get_trade_history(days: int = 7, symbol: Optional[str] = None) -> Dict[str, 
         "total_realized_pnl": total_profit,
         "deals": data
     }
+
+def get_trade_history_range(
+    start_time: str = "2026-08-01",
+    end_time: Optional[str] = None,
+    symbol: Optional[str] = None
+) -> Dict[str, Any]:
+    """Get closed trade deals, win/loss stats, and realized profit/loss between specific dates (e.g. '2026-08-01' to '2026-08-15')."""
+    if not MT5ConnectionManager.ensure_connected():
+        return {"status": "error", "message": "MT5 not connected"}
+
+    import pandas as pd
+    try:
+        dt_from = pd.to_datetime(start_time).to_pydatetime()
+        dt_to = pd.to_datetime(end_time).to_pydatetime() if end_time else datetime.now()
+    except Exception as e:
+        return {"status": "error", "message": f"Invalid date format: {e}. Use 'YYYY-MM-DD'"}
+
+    if symbol:
+        deals = mt5.history_deals_get(dt_from, dt_to, symbol=symbol)
+    else:
+        deals = mt5.history_deals_get(dt_from, dt_to)
+
+    if deals is None:
+        return {"status": "error", "message": "Failed to fetch trade history for the specified range"}
+
+    data = [format_deal(d) for d in deals if d.entry == mt5.DEAL_ENTRY_OUT]
+    total_profit = round(sum(d["profit"] + d["swap"] + d["commission"] + d["fee"] for d in data), 2)
+    winning_deals = [d for d in data if d["profit"] > 0]
+    losing_deals = [d for d in data if d["profit"] < 0]
+    win_rate = round((len(winning_deals) / len(data)) * 100, 2) if data else 0.0
+
+    return {
+        "status": "success",
+        "start_time": dt_from.isoformat(),
+        "end_time": dt_to.isoformat(),
+        "total_closed_deals": len(data),
+        "win_rate_percent": f"{win_rate}%",
+        "winning_deals_count": len(winning_deals),
+        "losing_deals_count": len(losing_deals),
+        "total_realized_pnl_usd": total_profit,
+        "deals": data
+    }
