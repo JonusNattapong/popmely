@@ -16,6 +16,7 @@ import popmely.tools.backtest as backtest_tool
 import popmely.tools.risk as risk_tool
 import popmely.tools.trading as trading_tool
 import popmely.tools.agent as agent_tool
+import popmely.tools.credit_score as score_tool
 
 # Setup standard logging to stderr
 logging.basicConfig(
@@ -262,6 +263,50 @@ def mt5_send_test_alert(message: str = "Test alert from popmely AI trading bot!"
     return agent_tool.send_test_alert(message)
 
 # =====================================================================
+# 8. CREDIT SCORE TOOLS (Risk Management Scoring)
+# =====================================================================
+
+@mcp.tool()
+def mt5_score_init(max_score: float = 100.0, initial_balance: float = 10000.0, base_multiplier: float = 100.0, recovery_rate: float = 0.5) -> dict:
+    """Initialize the Trading Credit Score system. Set your own starting score and reference balance. The score controls risk behavior:
+    - GREEN (70-100%): Normal trading, full lot size
+    - YELLOW (50-70%): Cautious mode, lot size reduced 50%
+    - ORANGE (30-50%): Warning mode, lot size reduced 75% + alerts
+    - CRITICAL (<30%): STOP TRADING, signal-only mode + urgent alerts
+    Points are deducted on SL hits and partially recovered on TP hits."""
+    return score_tool.score_init(max_score, initial_balance, base_multiplier, recovery_rate)
+
+@mcp.tool()
+def mt5_score_status() -> dict:
+    """Get current credit score, tier (GREEN/YELLOW/ORANGE/CRITICAL), lot multiplier, streaks, and cumulative statistics."""
+    return score_tool.score_status()
+
+@mcp.tool()
+def mt5_score_deduct(loss_usd: float, reason: str = "SL Hit") -> dict:
+    """Deduct points from credit score based on a realized trading loss (SL hit). Automatically applies losing streak multiplier penalty."""
+    return score_tool.score_deduct(loss_usd, reason)
+
+@mcp.tool()
+def mt5_score_recover(profit_usd: float) -> dict:
+    """Recover credit score points based on a realized trading profit (TP hit). Recovery rate is 50% of deduction rate."""
+    return score_tool.score_recover(profit_usd)
+
+@mcp.tool()
+def mt5_score_reset() -> dict:
+    """Reset credit score back to max value without changing configuration."""
+    return score_tool.score_reset()
+
+@mcp.tool()
+def mt5_score_set(score: float) -> dict:
+    """Manually set the credit score to a specific value between 0 and max_score."""
+    return score_tool.score_set(score)
+
+@mcp.tool()
+def mt5_score_history(limit: int = 20) -> dict:
+    """View the recent credit score change history log with timestamps, event types, and details."""
+    return score_tool.score_history(limit)
+
+# =====================================================================
 # 8. MCP RESOURCES (Read-only context for AI)
 # =====================================================================
 
@@ -287,28 +332,40 @@ def get_config_resource() -> str:
         "require_sl": config.REQUIRE_SL
     }, indent=2)
 
+@mcp.resource("mt5://score/status")
+def get_score_resource() -> str:
+    """Read-only credit score status including tier, lot multiplier, and score percentage."""
+    return json.dumps(score_tool.score_status(), indent=2)
+
 # =====================================================================
 # 9. MCP PROMPTS (Pre-built prompts for LLM)
 # =====================================================================
 
 @mcp.prompt()
 def daily_market_briefing(symbol: str = "XAUUSD") -> str:
-    """Generate a daily market overview and account health check."""
+    """Generate a daily market overview, account health check, and credit score review."""
     return f"""Please perform a comprehensive market briefing for {symbol}:
 1. Check MT5 account balance, equity, and current margin.
-2. Get the real-time quote for {symbol}.
-3. Perform technical analysis (EMA, RSI, MACD, ATR) on H1 and M15 timeframes.
-4. Perform SMC analysis (Market Structure, Order Blocks, FVGs).
-5. Give a concise summary with high-probability trade zones for today."""
+2. **Check Credit Score status** (mt5_score_status) - review current tier and lot multiplier.
+3. Get the real-time quote for {symbol}.
+4. Perform technical analysis (EMA, RSI, MACD, ATR) on H1 and M15 timeframes.
+5. Perform SMC analysis (Market Structure, Order Blocks, FVGs).
+6. Give a concise summary with high-probability trade zones for today.
+
+IMPORTANT: If the credit score is in YELLOW/ORANGE/CRITICAL tier, flag this prominently and adjust recommendations accordingly."""
 
 @mcp.prompt()
 def smc_trade_setup(symbol: str = "XAUUSD", risk_percent: float = 1.0) -> str:
-    """Generate a full SMC trade plan with risk calculation."""
+    """Generate a full SMC trade plan with risk calculation and credit score awareness."""
     return f"""Analyze {symbol} using Smart Money Concepts:
-1. Identify the current market structure (BOS/CHoCH).
-2. Find any active unmitigated Order Blocks (OB) or Fair Value Gaps (FVG).
-3. Determine if current price is in Premium (Sell) or Discount (Buy) zone.
-4. If a valid setup exists, calculate optimal Lot Size for {risk_percent}% risk and suggest Entry, SL, and TP (1:2 R:R)."""
+1. **First, check Credit Score** (mt5_score_status). If CRITICAL, DO NOT suggest any trades - signal only.
+2. Identify the current market structure (BOS/CHoCH).
+3. Find any active unmitigated Order Blocks (OB) or Fair Value Gaps (FVG).
+4. Determine if current price is in Premium (Sell) or Discount (Buy) zone.
+5. If a valid setup exists and credit score allows trading, calculate optimal Lot Size for {risk_percent}% risk (adjusted by credit score lot_multiplier) and suggest Entry, SL, and TP (1:2 R:R).
+
+Note: The credit score system automatically adjusts lot size:
+- GREEN (70-100%): Full lot | YELLOW (50-70%): 50% lot | ORANGE (30-50%): 25% lot | CRITICAL (<30%): NO TRADE"""
 
 # =====================================================================
 # 10. MAIN ENTRYPOINT
