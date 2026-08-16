@@ -5,8 +5,10 @@ from typing import Dict, Any, List, Optional
 
 logger = logging.getLogger("popmely.credit_score")
 
+
 class TradingCreditScore:
-    """Trading Credit Score System - Risk management scoring that controls bot behavior based on cumulative SL hits."""
+    """Trading Credit Score System - Risk management scoring that controls bot behavior based on cumulative SL hits.
+    Now with SQLite persistence: score state survives server restarts."""
 
     TIER_GREEN = "GREEN"
     TIER_YELLOW = "YELLOW"
@@ -25,6 +27,47 @@ class TradingCreditScore:
         self.total_recoveries: float = 0.0
         self.initialized: bool = False
         self.history: List[Dict[str, Any]] = []
+
+        # Try to restore from DB on startup
+        self._try_restore_from_db()
+
+    def _try_restore_from_db(self):
+        """Attempt to load persisted credit score state from the database."""
+        try:
+            from popmely.db import load_credit_score_state
+            saved = load_credit_score_state()
+            if saved is not None:
+                self.current_score = saved["current_score"]
+                self.max_score = saved["max_score"]
+                self.initial_balance = saved["initial_balance"]
+                self.base_multiplier = saved["base_multiplier"]
+                self.recovery_rate = saved["recovery_rate"]
+                self.losing_streak = saved["losing_streak"]
+                self.winning_streak = saved["winning_streak"]
+                self.total_deductions = saved["total_deductions"]
+                self.total_recoveries = saved["total_recoveries"]
+                self.initialized = True
+                logger.info(f"[CreditScore] Restored from DB: {self.current_score:.2f}/{self.max_score} ({self.get_tier()})")
+        except Exception as e:
+            logger.debug(f"[CreditScore] Could not restore from DB (first run?): {e}")
+
+    def _persist(self):
+        """Save current state to the database."""
+        try:
+            from popmely.db import save_credit_score_state
+            save_credit_score_state({
+                "current_score": self.current_score,
+                "max_score": self.max_score,
+                "initial_balance": self.initial_balance,
+                "base_multiplier": self.base_multiplier,
+                "recovery_rate": self.recovery_rate,
+                "losing_streak": self.losing_streak,
+                "winning_streak": self.winning_streak,
+                "total_deductions": self.total_deductions,
+                "total_recoveries": self.total_recoveries,
+            })
+        except Exception as e:
+            logger.warning(f"[CreditScore] Failed to persist to DB: {e}")
 
     # ---- Tier Thresholds ----
 
@@ -90,6 +133,7 @@ class TradingCreditScore:
         self.history = []
 
         self._log_event("INIT", 0.0, f"Score initialized: {self.max_score} pts, Balance ref: ${self.initial_balance}")
+        self._persist()
 
         return self.get_status()
 
@@ -119,6 +163,7 @@ class TradingCreditScore:
 
         self._log_event("DEDUCT", -final_deduction,
                         f"{reason} | Loss: ${loss_usd:.2f} | Streak: {self.losing_streak} (x{streak_mult})")
+        self._persist()
 
         tier_changed = old_tier != new_tier
 
@@ -163,6 +208,7 @@ class TradingCreditScore:
 
         self._log_event("RECOVER", +final_recovery,
                         f"TP Hit | Profit: ${profit_usd:.2f} | Win streak: {self.winning_streak}")
+        self._persist()
 
         tier_changed = old_tier != new_tier
 
@@ -191,6 +237,7 @@ class TradingCreditScore:
         self.losing_streak = 0
         self.winning_streak = 0
         self._log_event("RESET", self.max_score - old_score, "Manual reset to max score")
+        self._persist()
 
         return self.get_status()
 
@@ -203,6 +250,7 @@ class TradingCreditScore:
         self.current_score = max(0.0, min(self.max_score, score))
         diff = self.current_score - old_score
         self._log_event("MANUAL_SET", diff, f"Manually set to {self.current_score}")
+        self._persist()
 
         return self.get_status()
 
@@ -226,6 +274,7 @@ class TradingCreditScore:
         return {
             "status": "success",
             "initialized": True,
+            "persistent": True,
             "score": {
                 "current": round(self.current_score, 2),
                 "max": self.max_score,
@@ -256,12 +305,27 @@ class TradingCreditScore:
         }
 
     def get_history(self, limit: int = 20) -> Dict[str, Any]:
-        """Get the score change history log."""
+        """Get the score change history log (from DB if available, fallback to in-memory)."""
         if not self.initialized:
             return {"status": "error", "message": "Credit Score not initialized."}
 
+        # Try DB first for persistent history
+        try:
+            from popmely.db import get_credit_score_history
+            db_events = get_credit_score_history(limit)
+            if db_events:
+                return {
+                    "status": "success",
+                    "source": "database",
+                    "total_events": len(db_events),
+                    "recent_events": db_events
+                }
+        except Exception:
+            pass
+
         return {
             "status": "success",
+            "source": "memory",
             "total_events": len(self.history),
             "recent_events": self.history[-limit:]
         }
@@ -269,7 +333,7 @@ class TradingCreditScore:
     # ---- Internal ----
 
     def _log_event(self, event_type: str, points_change: float, detail: str):
-        """Log a score event to history."""
+        """Log a score event to both in-memory history and persistent DB."""
         self.history.append({
             "time": datetime.now().isoformat(),
             "event": event_type,
@@ -279,6 +343,13 @@ class TradingCreditScore:
             "detail": detail
         })
         logger.info(f"[CreditScore] {event_type}: {points_change:+.2f} → {self.current_score:.2f} ({self.get_tier()}) | {detail}")
+
+        # Persist event to DB
+        try:
+            from popmely.db import save_credit_score_event
+            save_credit_score_event(event_type, points_change, self.current_score, self.get_tier(), detail)
+        except Exception as e:
+            logger.debug(f"[CreditScore] Could not persist event to DB: {e}")
 
 
 # Singleton instance
@@ -314,3 +385,4 @@ def score_set(score: float) -> Dict[str, Any]:
 def score_history(limit: int = 20) -> Dict[str, Any]:
     """View the recent score change history log with timestamps and details."""
     return credit_score.get_history(limit)
+

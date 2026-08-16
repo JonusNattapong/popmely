@@ -19,6 +19,7 @@ import popmely.tools.agent as agent_tool
 import popmely.tools.credit_score as score_tool
 import popmely.tools.institutional as inst_tool
 import popmely.tools.journal as journal_tool
+import popmely.tools.db_tools as db_tool
 
 # Setup standard logging to stderr
 logging.basicConfig(
@@ -518,6 +519,67 @@ def smc_trade_setup(symbol: str = "XAUUSD", risk_percent: float = 1.0) -> str:
 
 Note: The credit score system automatically adjusts lot size:
 - GREEN (70-100%): Full lot | YELLOW (50-70%): 50% lot | ORANGE (30-50%): 25% lot | CRITICAL (<30%): NO TRADE"""
+
+# =====================================================================
+# 9. DATABASE TOOLS
+# =====================================================================
+
+@mcp.tool()
+def mt5_db_add_trade_note(
+    symbol: str = "XAUUSD",
+    note: str = "",
+    deal_ticket: Optional[int] = None,
+    order_ticket: Optional[int] = None,
+    action: Optional[str] = None,
+    volume: Optional[float] = None,
+    entry_price: Optional[float] = None,
+    exit_price: Optional[float] = None,
+    profit_usd: Optional[float] = None,
+    strategy: Optional[str] = None,
+    tags: Optional[str] = None,
+    ai_reflection: Optional[str] = None
+) -> dict:
+    """Add a persistent trade journal note with deal details, strategy tag, and AI analysis into the SQLite database."""
+    return db_tool.db_add_trade_note(
+        symbol=symbol, note=note, deal_ticket=deal_ticket,
+        order_ticket=order_ticket, action=action, volume=volume,
+        entry_price=entry_price, exit_price=exit_price,
+        profit_usd=profit_usd, strategy=strategy, tags=tags,
+        ai_reflection=ai_reflection
+    )
+
+@mcp.tool()
+def mt5_db_get_journal_notes(
+    symbol: Optional[str] = None,
+    deal_ticket: Optional[int] = None,
+    days: int = 30,
+    limit: int = 50
+) -> dict:
+    """Retrieve persistent trade journal notes from the database, optionally filtered by symbol, deal ticket, or date range."""
+    return db_tool.db_get_journal_notes(symbol=symbol, deal_ticket=deal_ticket, days=days, limit=limit)
+
+@mcp.tool()
+def mt5_db_get_signal_history(
+    symbol: Optional[str] = None,
+    strategy: Optional[str] = None,
+    limit: int = 50
+) -> dict:
+    """Retrieve bot signal audit history from the database, including execution status and trade outcomes."""
+    return db_tool.db_get_signal_history(symbol=symbol, strategy=strategy, limit=limit)
+
+@mcp.tool()
+def mt5_db_get_backtest_archive(
+    symbol: Optional[str] = None,
+    strategy: Optional[str] = None,
+    limit: int = 20
+) -> dict:
+    """Retrieve archived backtest results from the database for comparison and performance review."""
+    return db_tool.db_get_backtest_archive(symbol=symbol, strategy=strategy, limit=limit)
+
+@mcp.tool()
+def mt5_db_stats() -> dict:
+    """Get database statistics: file path, file size, and row counts for all tables (credit_score, journal, signals, backtests)."""
+    return db_tool.db_stats()
 
 # =====================================================================
 # 10. MAIN ENTRYPOINT

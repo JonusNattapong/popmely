@@ -248,6 +248,27 @@ def run_backtest(
     net_profit_usd = round(balance - start_balance, 2)
     net_profit_pct = round((net_profit_usd / start_balance) * 100, 2)
 
+    # Auto-archive to database
+    try:
+        from popmely.db import save_backtest_result
+        save_backtest_result(
+            symbol=symbol,
+            timeframe=timeframe,
+            strategy=strategy,
+            bars_count=len(df),
+            start_balance=start_balance,
+            final_balance=round(balance, 2),
+            total_trades=total_trades,
+            win_rate=round(win_rate, 2),
+            profit_factor=profit_factor,
+            max_drawdown_pct=round(max_drawdown_pct, 2),
+            net_profit=net_profit_usd,
+            risk_percent=risk_percent,
+            rr_ratio=rr_ratio
+        )
+    except Exception:
+        pass
+
     return {
         "status": "success",
         "symbol": symbol,

@@ -1,6 +1,6 @@
 # popmely: MetaTrader 5 (MT5) Model Context Protocol (MCP) Server
 
-[![Version](https://img.shields.io/badge/version-4.5.0-blue.svg?style=flat-square)](https://github.com/JonusNattapong/popmely)
+[![Version](https://img.shields.io/badge/version-5.0.0-blue.svg?style=flat-square)](https://github.com/JonusNattapong/popmely)
 [![Python](https://img.shields.io/badge/python-3.10%2B-brightgreen.svg?style=flat-square)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg?style=flat-square)](LICENSE)
 [![MCP](https://img.shields.io/badge/MCP-FastMCP%20Standard-purple.svg?style=flat-square)](https://modelcontextprotocol.io/)
@@ -8,7 +8,7 @@
 
 **popmely** is a production-grade, asynchronous **Model Context Protocol (MCP)** server providing seamless integration between MetaTrader 5 (MT5) and Large Language Models (LLMs) such as Claude, Antigravity, Cursor, and OpenAI Agents.
 
-It equips AI assistants with full-duplex control over financial markets—ranging from real-time price feeds, Smart Money Concept (SMC) structure analysis, bar-by-bar backtesting, automated risk calculation, and position lifecycle management, to a background autonomous trading bot with real-time Telegram alerts, a dynamic **Trading Credit Score** risk governance engine, and institutional ICT strategy models.
+It equips AI assistants with full-duplex control over financial markets—ranging from real-time price feeds, Smart Money Concept (SMC) structure analysis, bar-by-bar backtesting, automated risk calculation, and position lifecycle management, to a background autonomous trading bot with real-time Telegram alerts, a dynamic **Trading Credit Score** risk governance engine, institutional ICT strategy models, and an embedded **SQLite Persistence Database**.
 
 ---
 
@@ -17,7 +17,7 @@ It equips AI assistants with full-duplex control over financial markets—rangin
 1. [Key Features](#-key-features)
 2. [The Trader's Journey (Workflow)](#-the-traders-journey-workflow)
 3. [System Architecture](#-system-architecture)
-4. [MCP Interface Specification (45 Tools)](#-mcp-interface-specification)
+4. [MCP Interface Specification (50 Tools)](#-mcp-interface-specification)
 5. [Institutional & ICT Strategy Models](#-institutional--ict-strategy-models)
 6. [Trading Credit Score Engine](#-trading-credit-score-engine-v40)
 7. [Smart Money Concepts (SMC) Analyzer](#-smart-money-concepts-smc-analyzer)
@@ -127,7 +127,7 @@ graph TD
 
 ## 📋 MCP Interface Specification
 
-### 1. Tools (44 Callable Functions)
+### 1. Tools (50 Callable Functions)
 
 #### 💼 Account & Terminal
 | Tool Name | Description | Parameters |
@@ -161,7 +161,7 @@ graph TD
 #### 🔬 Backtesting Engine
 | Tool Name | Description | Parameters |
 |:---|:---|:---|
-| `mt5_run_backtest` | Run historical backtest on SMC FVG or EMA Cross strategies. | `symbol: str`, `timeframe: str = "M15"`, `strategy: str = "smc_fvg"`, `bars: int = 500`, `initial_balance: float = 10000.0`, `risk_percent: float = 1.0`, `rr_ratio: float = 2.0` |
+| `mt5_run_backtest` | Run historical backtest on SMC FVG or EMA Cross strategies with auto-archiving. | `symbol: str`, `timeframe: str = "M15"`, `strategy: str = "smc_fvg"`, `bars: int = 500`, `initial_balance: float = 10000.0`, `risk_percent: float = 1.0`, `rr_ratio: float = 2.0` |
 
 #### 🧮 Risk Management
 | Tool Name | Description | Parameters |
@@ -202,13 +202,22 @@ graph TD
 #### 🛡️ Trading Credit Score (Risk Governance)
 | Tool Name | Description | Parameters |
 |:---|:---|:---|
-| `mt5_score_init` | Initialize or configure credit score and reference portfolio balance. | `max_score: float = 100.0`, `initial_balance: float = 10000.0`, `base_multiplier: float = 100.0`, `recovery_rate: float = 0.5` |
+| `mt5_score_init` | Initialize or configure credit score and reference portfolio balance (persisted to SQLite). | `max_score: float = 100.0`, `initial_balance: float = 10000.0`, `base_multiplier: float = 100.0`, `recovery_rate: float = 0.5` |
 | `mt5_score_status` | Retrieve current score, tier, lot multiplier, and streak counters. | None |
-| `mt5_score_deduct` | Deduct points upon SL hit with automatic losing streak penalty. | `loss_usd: float`, `reason: str = "SL Hit"` |
+| `mt5_score_deduct` | Deduct points upon SL hit with automatic losing streak penalty (saved to SQLite). | `loss_usd: float`, `reason: str = "SL Hit"` |
 | `mt5_score_recover` | Recover points upon TP hit (50% of deduction rate). | `profit_usd: float` |
 | `mt5_score_reset` | Reset score to initial maximum capacity. | None |
 | `mt5_score_set` | Manually override score value for manual risk calibration. | `score: float` |
-| `mt5_score_history` | Audit log of score modifications, penalties, and recoveries. | `limit: int = 20` |
+| `mt5_score_history` | Audit log of score modifications, penalties, and recoveries from SQLite. | `limit: int = 20` |
+
+#### 💾 Persistent Database (SQLite Storage)
+| Tool Name | Description | Parameters |
+|:---|:---|:---|
+| `mt5_db_add_trade_note` | **Journal Diary Entry**: Attach user/AI reflections, strategy tags, and PnL notes to a trade ticket. | `symbol: str`, `note: str`, `deal_ticket: Optional[int]`, `profit_usd: Optional[float]`, `strategy: Optional[str]`, `tags: Optional[str]` |
+| `mt5_db_get_journal_notes` | **Query Journal Notes**: Retrieve persistent trade journal notes filtered by symbol or ticket. | `symbol: Optional[str]`, `deal_ticket: Optional[int]`, `days: int = 30`, `limit: int = 50` |
+| `mt5_db_get_signal_history` | **Signal Audit Trail**: Retrieve historical bot signals, triggers, and execution statuses. | `symbol: Optional[str]`, `strategy: Optional[str]`, `limit: int = 50` |
+| `mt5_db_get_backtest_archive` | **Backtest Library**: Query archived historical backtest runs, win rates, and profit factors. | `symbol: Optional[str]`, `strategy: Optional[str]`, `limit: int = 20` |
+| `mt5_db_stats` | **Database Health**: View SQLite database size, file path, and record counts across all tables. | None |
 
 ---
 
@@ -465,7 +474,7 @@ WEBHOOK_URL=https://your-webhook-endpoint.com/api
 The evolution of `popmely` from a basic MT5 bridge to an institutional AI trading server:
 
 ```
-v1.0.0 (Core Bridge) ──► v2.0.0 (SMC & Backtest) ──► v3.1.0 (Autonomous Bot) ──► v4.0.0 (Credit Score) ──► v4.5.0 (Institutional Mastery)
+v1.0.0 (Core Bridge) ──► v2.0.0 (SMC & Backtest) ──► v3.1.0 (Autonomous Bot) ──► v4.0.0 (Credit Score) ──► v4.5.0 (ICT Strategies) ──► v5.0.0 (SQLite Database)
 ```
 
 | Milestone | Version | Release Highlights | Key Tools Added |
@@ -474,7 +483,8 @@ v1.0.0 (Core Bridge) ──► v2.0.0 (SMC & Backtest) ──► v3.1.0 (Autonom
 | **SMC & Quantitative Engine** | `v2.0.0` | Introduced Smart Money Concepts analyzer and bar-by-bar backtest simulation. | BOS, CHoCH, OB, FVG, Backtest Engine |
 | **Autonomous AI & Protocol** | `v3.1.0` | Standardized to FastMCP, background autonomous scanning worker, and Telegram alerts. | Agent Worker, Auto-BE, Trailing Stop, Telegram Notifier |
 | **Trading Credit Score** | `v4.0.0` | Adaptive risk governance engine that scales lot sizes and halts trading on drawdown. | Credit Score Tiers (GREEN/YELLOW/ORANGE/CRITICAL) |
-| **Institutional Mastery** | `v4.5.0` | Institutional ICT strategies, Smart entry orders, Selective position closing, and Date range queries. | Silver Bullet, Judas Swing, IFVG, Confluence, Trade Journal (45 Tools) |
+| **Institutional Mastery** | `v4.5.0` | Institutional ICT strategies, Smart entry orders, Selective position closing, and Date range queries. | Silver Bullet, Judas Swing, IFVG, Confluence, Trade Journal |
+| **SQLite Persistence & DB** | `v5.0.0` | Embedded SQLite database engine with state persistence, trade notes diary, signal audit trails, and backtest archives. | DB Add Note, Query Notes, Signals Log, Backtest Archive, DB Stats (50 Tools) |
 
 ---
 
