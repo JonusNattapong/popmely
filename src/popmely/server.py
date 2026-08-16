@@ -184,6 +184,67 @@ def mt5_place_pending_order(
     )
 
 @mcp.tool()
+def mt5_smart_order(
+    symbol: str = "XAUUSD",
+    action: str = "BUY",
+    sl_price: float = 0.0,
+    tp_price: Optional[float] = None,
+    rr_ratio: float = 2.0,
+    risk_percent: float = 1.0,
+    comment: str = "AI_SmartOrder"
+) -> dict:
+    """Smart Order Execution: Automatically calculates optimal Lot Size from % risk and SL distance, verifies Credit Score, calculates TP target based on R:R ratio, and executes order in one step."""
+    return trading_tool.smart_order(
+        symbol=symbol,
+        action=action,
+        sl_price=sl_price,
+        tp_price=tp_price,
+        rr_ratio=rr_ratio,
+        risk_percent=risk_percent,
+        comment=comment
+    )
+
+@mcp.tool()
+def mt5_place_bracket_order(
+    symbol: str = "XAUUSD",
+    distance_points: float = 200.0,
+    volume: float = 0.01,
+    sl_points: float = 150.0,
+    tp_points: float = 300.0,
+    comment: str = "AI_Bracket"
+) -> dict:
+    """Place a Straddle Bracket Order (Both BUY_STOP above and SELL_STOP below market price) for breakout/news trading."""
+    return trading_tool.place_bracket_order(
+        symbol=symbol,
+        distance_points=distance_points,
+        volume=volume,
+        sl_points=sl_points,
+        tp_points=tp_points,
+        comment=comment
+    )
+
+@mcp.tool()
+def mt5_place_grid_orders(
+    symbol: str = "XAUUSD",
+    action: str = "BUY",
+    levels: int = 3,
+    step_points: float = 150.0,
+    volume_per_order: float = 0.01,
+    tp_points: float = 300.0,
+    comment: str = "AI_Grid"
+) -> dict:
+    """Place DCA/Grid Pending Limit Orders stepping down (for BUY) or stepping up (for SELL) to average into positions."""
+    return trading_tool.place_grid_orders(
+        symbol=symbol,
+        action=action,
+        levels=levels,
+        step_points=step_points,
+        volume_per_order=volume_per_order,
+        tp_points=tp_points,
+        comment=comment
+    )
+
+@mcp.tool()
 def mt5_get_positions(symbol: Optional[str] = None) -> dict:
     """Get all open active positions or filter by symbol, including unrealized profit and tickets."""
     return trading_tool.get_positions(symbol)

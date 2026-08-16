@@ -93,7 +93,7 @@ graph TD
 
 ## 📋 MCP Interface Specification
 
-### 1. Tools (35 Callable Functions)
+### 1. Tools (38 Callable Functions)
 
 #### 💼 Account & Terminal
 | Tool Name | Description | Parameters |
@@ -125,11 +125,14 @@ graph TD
 |:---|:---|:---|
 | `mt5_calculate_lot_size` | Calculate position size by account risk %, balance, and SL distance. | `symbol: str`, `entry_price: float`, `stop_loss_price: float`, `take_profit_price: float`, `risk_percent: float = 1.0` |
 
-#### ⚡ Order & Position Execution
+#### ⚡ Smart Order & Position Execution
 | Tool Name | Description | Parameters |
 |:---|:---|:---|
-| `mt5_place_order` | Send Market BUY/SELL order with SL, TP, and magic number. | `symbol: str`, `action: str ("BUY"/"SELL")`, `volume: float`, `sl: float = 0.0`, `tp: float = 0.0`, `comment: str = ""` |
+| `mt5_place_order` | Send standard Market BUY/SELL order with SL, TP, and magic number. | `symbol: str`, `action: str ("BUY"/"SELL")`, `volume: float`, `sl: float = 0.0`, `tp: float = 0.0`, `comment: str = ""` |
+| `mt5_smart_order` | **Smart Auto-Risk Order**: Computes exact lot size by % risk, verifies Credit Score, calculates TP by R:R, and executes in 1 step. | `symbol: str`, `action: str`, `sl_price: float`, `tp_price: float = 0.0`, `rr_ratio: float = 2.0`, `risk_percent: float = 1.0` |
 | `mt5_place_pending_order` | Place pending Limit or Stop orders (`BUY_LIMIT`, `SELL_LIMIT`, `BUY_STOP`, `SELL_STOP`). | `symbol: str`, `order_type: str`, `price: float`, `volume: float`, `sl: float = 0.0`, `tp: float = 0.0` |
+| `mt5_place_bracket_order` | **News/Breakout Straddle**: Place both BUY_STOP above and SELL_STOP below market price simultaneously. | `symbol: str`, `distance_points: float = 200.0`, `volume: float = 0.01`, `sl_points: float = 150.0`, `tp_points: float = 300.0` |
+| `mt5_place_grid_orders` | **DCA / Grid Scaling**: Place multiple pending limit orders stepping down (Buy) or up (Sell) to average entry price. | `symbol: str`, `action: str`, `levels: int = 3`, `step_points: float = 150.0`, `volume_per_order: float = 0.01` |
 | `mt5_get_positions` | List currently open market positions with floating PnL and tickets. | `symbol: str = ""` |
 | `mt5_modify_position` | Update Stop Loss or Take Profit of an active position. | `ticket: int`, `sl: float = 0.0`, `tp: float = 0.0` |
 | `mt5_close_position` | Close an active position by ticket ID with partial close support. | `ticket: int`, `volume: float = 0.0` |

@@ -152,6 +152,188 @@ def place_pending_order(
         "volume": volume
     }
 
+def smart_order(
+    symbol: str,
+    action: str,
+    sl_price: float,
+    tp_price: Optional[float] = None,
+    rr_ratio: float = 2.0,
+    risk_percent: float = 1.0,
+    comment: str = "AI_SmartOrder"
+) -> Dict[str, Any]:
+    """Smart Order: Automatically computes exact Lot Size by risk % of account equity, checks Credit Score, calculates TP by R:R ratio, and executes market order in one step."""
+    if not MT5ConnectionManager.ensure_connected():
+        return {"status": "error", "message": "MT5 not connected"}
+
+    from popmely.tools.credit_score import credit_score
+    from popmely.tools.risk import calculate_lot_size
+
+    # 1. Check Credit Score
+    if credit_score.initialized and not credit_score.is_trading_allowed():
+        return {
+            "status": "error",
+            "message": f"Trading BLOCKED by Credit Score (Tier: {credit_score.get_tier()}, Score: {credit_score.get_score_percent()}%). Reset score or improve performance before trading."
+        }
+
+    # 2. Get Current Quote
+    tick = mt5.symbol_info_tick(symbol)
+    if tick is None:
+        return {"status": "error", "message": f"Cannot get price quote for {symbol}"}
+
+    action_upper = action.upper()
+    entry_price = tick.ask if action_upper == "BUY" else tick.bid
+
+    # 3. Calculate TP if not provided
+    sl_dist = abs(entry_price - sl_price)
+    if sl_dist <= 0:
+        return {"status": "error", "message": "Stop Loss price cannot equal entry price"}
+
+    if tp_price is None or tp_price <= 0:
+        if action_upper == "BUY":
+            tp_price = round(entry_price + (sl_dist * rr_ratio), 5)
+        else:
+            tp_price = round(entry_price - (sl_dist * rr_ratio), 5)
+
+    # 4. Calculate Risk-Weighted Lot Size
+    lot_res = calculate_lot_size(
+        symbol=symbol,
+        entry_price=entry_price,
+        stop_loss_price=sl_price,
+        take_profit_price=tp_price,
+        risk_percent=risk_percent
+    )
+
+    if lot_res.get("status") != "success":
+        return {"status": "error", "message": f"Lot calculation failed: {lot_res.get('message')}"}
+
+    base_lot = lot_res.get("recommended_lot", 0.01)
+
+    # 5. Apply Credit Score multiplier
+    lot_multiplier = 1.0
+    if credit_score.initialized:
+        lot_multiplier = credit_score.get_lot_multiplier()
+
+    final_lot = max(0.01, round(base_lot * lot_multiplier, 2))
+
+    # 6. Execute Order
+    order_res = place_order(
+        symbol=symbol,
+        action=action_upper,
+        volume=final_lot,
+        sl=sl_price,
+        tp=tp_price,
+        comment=comment
+    )
+
+    if order_res.get("status") == "success":
+        order_res["smart_details"] = {
+            "entry_price": entry_price,
+            "sl_price": sl_price,
+            "tp_price": tp_price,
+            "risk_percent": f"{risk_percent}%",
+            "base_lot": base_lot,
+            "credit_score_multiplier": lot_multiplier,
+            "executed_lot": final_lot,
+            "risk_reward": f"1:{rr_ratio}"
+        }
+
+    return order_res
+
+def place_bracket_order(
+    symbol: str,
+    distance_points: float = 200.0,
+    volume: float = 0.01,
+    sl_points: float = 150.0,
+    tp_points: float = 300.0,
+    comment: str = "AI_Bracket"
+) -> Dict[str, Any]:
+    """Place a Straddle Bracket Order (Both BUY_STOP above and SELL_STOP below market price) for breakout/news trading."""
+    if not MT5ConnectionManager.ensure_connected():
+        return {"status": "error", "message": "MT5 not connected"}
+
+    tick = mt5.symbol_info_tick(symbol)
+    info = mt5.symbol_info(symbol)
+    if tick is None or info is None:
+        return {"status": "error", "message": f"Cannot get symbol info for {symbol}"}
+
+    point = info.point
+    dist_price = distance_points * point
+    sl_price_dist = sl_points * point
+    tp_price_dist = tp_points * point
+
+    # Buy Stop above ask
+    buy_price = round(tick.ask + dist_price, info.digits)
+    buy_sl = round(buy_price - sl_price_dist, info.digits)
+    buy_tp = round(buy_price + tp_price_dist, info.digits)
+
+    # Sell Stop below bid
+    sell_price = round(tick.bid - dist_price, info.digits)
+    sell_sl = round(sell_price + sl_price_dist, info.digits)
+    sell_tp = round(sell_price - tp_price_dist, info.digits)
+
+    res_buy = place_pending_order(symbol, "BUY_STOP", buy_price, volume, buy_sl, buy_tp, comment=f"{comment}_Buy")
+    res_sell = place_pending_order(symbol, "SELL_STOP", sell_price, volume, sell_sl, sell_tp, comment=f"{comment}_Sell")
+
+    return {
+        "status": "success",
+        "symbol": symbol,
+        "buy_stop": res_buy,
+        "sell_stop": res_sell,
+        "message": f"Bracket orders placed: BUY_STOP @ {buy_price} and SELL_STOP @ {sell_price}"
+    }
+
+def place_grid_orders(
+    symbol: str,
+    action: str,
+    levels: int = 3,
+    step_points: float = 150.0,
+    volume_per_order: float = 0.01,
+    tp_points: float = 300.0,
+    comment: str = "AI_Grid"
+) -> Dict[str, Any]:
+    """Place DCA/Grid Pending Limit Orders stepping down (for BUY) or stepping up (for SELL) to average into positions."""
+    if not MT5ConnectionManager.ensure_connected():
+        return {"status": "error", "message": "MT5 not connected"}
+
+    action_upper = action.upper()
+    if action_upper not in ("BUY", "SELL"):
+        return {"status": "error", "message": "Action must be BUY or SELL"}
+
+    tick = mt5.symbol_info_tick(symbol)
+    info = mt5.symbol_info(symbol)
+    if tick is None or info is None:
+        return {"status": "error", "message": f"Cannot get symbol info for {symbol}"}
+
+    point = info.point
+    order_type = "BUY_LIMIT" if action_upper == "BUY" else "SELL_LIMIT"
+    base_price = tick.bid if action_upper == "BUY" else tick.ask
+
+    results = []
+    for i in range(1, levels + 1):
+        step = (step_points * i) * point
+        price = round(base_price - step if action_upper == "BUY" else base_price + step, info.digits)
+        tp = round(price + (tp_points * point) if action_upper == "BUY" else price - (tp_points * point), info.digits)
+        sl = 0.0
+
+        res = place_pending_order(
+            symbol=symbol,
+            order_type=order_type,
+            price=price,
+            volume=volume_per_order,
+            sl=sl,
+            tp=tp,
+            comment=f"{comment}_L{i}"
+        )
+        results.append({"level": i, "price": price, "tp": tp, "result": res})
+
+    return {
+        "status": "success",
+        "symbol": symbol,
+        "grid_type": order_type,
+        "levels_count": len(results),
+        "grid_orders": results
+    }
+
 def get_positions(symbol: Optional[str] = None) -> Dict[str, Any]:
     """Get all open active positions or filter by symbol."""
     if not MT5ConnectionManager.ensure_connected():
