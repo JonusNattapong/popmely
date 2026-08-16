@@ -39,11 +39,27 @@ def agent_status() -> Dict[str, Any]:
 
 def send_test_alert(message: str = "Test alert from popmely AI trading bot!") -> Dict[str, Any]:
     """Send a test notification to Telegram / configured Webhook."""
-    success = notifier.send_telegram(f"🔔 <b>[TEST ALERT]</b>\n\n{message}")
-    if success:
-        return {"status": "success", "message": "Telegram alert sent successfully!"}
-    else:
-        return {
-            "status": "warning",
-            "message": "Failed to send alert. Make sure TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID are set in .env"
-        }
+    res = notifier.send_telegram(f"🔔 <b>[TEST ALERT]</b>\n\n{message}")
+    return res
+
+def send_telegram_message(
+    message: str,
+    chat_id: Optional[str] = None,
+    parse_mode: str = "HTML",
+    token: Optional[str] = None
+) -> Dict[str, Any]:
+    """Send any custom/freeform message or trading alert to a Telegram chat or channel."""
+    if not message:
+        return {"status": "error", "message": "Message text cannot be empty"}
+    return notifier.send_telegram(message=message, parse_mode=parse_mode, token=token, chat_id=chat_id)
+
+def send_telegram_photo(
+    photo_path: str,
+    caption: Optional[str] = None,
+    chat_id: Optional[str] = None,
+    token: Optional[str] = None
+) -> Dict[str, Any]:
+    """Send a chart image (.png) or screenshot with optional caption directly to Telegram."""
+    if not photo_path:
+        return {"status": "error", "message": "photo_path is required"}
+    return notifier.send_telegram_photo(photo_path=photo_path, caption=caption, token=token, chat_id=chat_id)

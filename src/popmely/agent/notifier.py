@@ -14,15 +14,20 @@ class AlertNotifier:
         self.telegram_chat_id = telegram_chat_id or config.TELEGRAM_CHAT_ID
         self.webhook_url = webhook_url or config.WEBHOOK_URL
 
-    def send_telegram(self, message: str, parse_mode: str = "HTML") -> bool:
-        """Send message via Telegram Bot API."""
-        if not self.telegram_token or not self.telegram_chat_id:
-            logger.debug("Telegram credentials not configured. Skipping telegram alert.")
-            return False
+    def send_telegram(self, message: str, parse_mode: str = "HTML", token: Optional[str] = None, chat_id: Optional[str] = None) -> Dict[str, Any]:
+        """Send custom/freeform message via Telegram Bot API."""
+        bot_token = token or self.telegram_token
+        target_chat_id = chat_id or self.telegram_chat_id
 
-        url = f"https://api.telegram.org/bot{self.telegram_token}/sendMessage"
+        if not bot_token or not target_chat_id:
+            return {
+                "status": "warning",
+                "message": "Telegram token or chat_id not configured. Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID in .env or pass them directly."
+            }
+
+        url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
         payload = {
-            "chat_id": self.telegram_chat_id,
+            "chat_id": target_chat_id,
             "text": message,
             "parse_mode": parse_mode
         }
@@ -31,13 +36,64 @@ class AlertNotifier:
             resp = requests.post(url, json=payload, timeout=10)
             if resp.status_code == 200:
                 logger.info("Telegram alert sent successfully.")
-                return True
+                return {
+                    "status": "success",
+                    "chat_id": target_chat_id,
+                    "message_length": len(message),
+                    "delivered": True
+                }
             else:
-                logger.warning(f"Telegram API returned status {resp.status_code}: {resp.text}")
-                return False
+                return {
+                    "status": "error",
+                    "status_code": resp.status_code,
+                    "message": f"Telegram API error: {resp.text}"
+                }
         except Exception as e:
             logger.error(f"Error sending Telegram alert: {e}")
-            return False
+            return {"status": "error", "message": f"Connection error: {e}"}
+
+    def send_telegram_photo(self, photo_path: str, caption: Optional[str] = None, token: Optional[str] = None, chat_id: Optional[str] = None) -> Dict[str, Any]:
+        """Send an image/chart (.png, .jpg) with optional caption to Telegram."""
+        bot_token = token or self.telegram_token
+        target_chat_id = chat_id or self.telegram_chat_id
+
+        if not bot_token or not target_chat_id:
+            return {
+                "status": "warning",
+                "message": "Telegram token or chat_id not configured. Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID in .env or pass them directly."
+            }
+
+        if not os.path.exists(photo_path):
+            return {"status": "error", "message": f"Photo file not found at '{photo_path}'"}
+
+        url = f"https://api.telegram.org/bot{bot_token}/sendPhoto"
+        data = {"chat_id": target_chat_id}
+        if caption:
+            data["caption"] = caption
+            data["parse_mode"] = "HTML"
+
+        try:
+            with open(photo_path, "rb") as f:
+                files = {"photo": f}
+                resp = requests.post(url, data=data, files=files, timeout=15)
+
+            if resp.status_code == 200:
+                logger.info(f"Telegram photo sent successfully: {photo_path}")
+                return {
+                    "status": "success",
+                    "chat_id": target_chat_id,
+                    "photo_path": photo_path,
+                    "delivered": True
+                }
+            else:
+                return {
+                    "status": "error",
+                    "status_code": resp.status_code,
+                    "message": f"Telegram API photo error: {resp.text}"
+                }
+        except Exception as e:
+            logger.error(f"Error sending Telegram photo: {e}")
+            return {"status": "error", "message": f"Connection error: {e}"}
 
     def send_webhook(self, data: Dict[str, Any]) -> bool:
         """Send JSON payload to generic webhook / Discord."""

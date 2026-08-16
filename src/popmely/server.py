@@ -481,6 +481,26 @@ def mt5_send_test_alert(message: str = "Test alert from popmely AI trading bot!"
     """Send a test notification to Telegram or configured Webhook."""
     return agent_tool.send_test_alert(message)
 
+@mcp.tool()
+def mt5_send_telegram_message(
+    message: str,
+    chat_id: Optional[str] = None,
+    parse_mode: str = "HTML",
+    token: Optional[str] = None
+) -> dict:
+    """Send any custom/freeform text message, market briefing, or trade analysis to a Telegram chat, group, or channel."""
+    return agent_tool.send_telegram_message(message=message, chat_id=chat_id, parse_mode=parse_mode, token=token)
+
+@mcp.tool()
+def mt5_send_telegram_photo(
+    photo_path: str,
+    caption: Optional[str] = None,
+    chat_id: Optional[str] = None,
+    token: Optional[str] = None
+) -> dict:
+    """Send a candlestick chart image (.png) or screenshot with optional trade setup caption directly to Telegram."""
+    return agent_tool.send_telegram_photo(photo_path=photo_path, caption=caption, chat_id=chat_id, token=token)
+
 # =====================================================================
 # 8. CREDIT SCORE TOOLS (Risk Management Scoring)
 # =====================================================================

@@ -17,7 +17,7 @@ It equips AI assistants with full-duplex control over financial markets—rangin
 1. [Key Features](#-key-features)
 2. [The Trader's Journey (Workflow)](#-the-traders-journey-workflow)
 3. [System Architecture](#-system-architecture)
-4. [MCP Interface Specification (63 Tools)](#-mcp-interface-specification)
+4. [MCP Interface Specification (65 Tools)](#-mcp-interface-specification)
 5. [Institutional & ICT Strategy Models](#-institutional--ict-strategy-models)
 6. [Trading Credit Score Engine](#-trading-credit-score-engine-v40)
 7. [Smart Money Concepts (SMC) Analyzer](#-smart-money-concepts-smc-analyzer)
@@ -127,7 +127,7 @@ graph TD
 
 ## 📋 MCP Interface Specification
 
-### 1. Tools (63 Callable Functions)
+### 1. Tools (65 Callable Functions)
 
 #### 💼 Account & Terminal
 | Tool Name | Description | Parameters |
@@ -203,13 +203,15 @@ graph TD
 | `mt5_get_trade_history_range` | **Date Range PnL & Deals**: Retrieve closed trades and win rate stats between specific dates. | `start_time: str`, `end_time: Optional[str] = None`, `symbol: Optional[str] = None` |
 | `mt5_get_trade_journal` | **AI Trade Journey & Journal**: Generates detailed trade journey logs, R:R analytics, Credit Score impact, and AI feedback. | `days: int = 7`, `symbol: Optional[str] = None` |
 
-#### 🤖 Autonomous Agent Management
+#### 🤖 Autonomous Agent Management & Notifications
 | Tool Name | Description | Parameters |
 |:---|:---|:---|
 | `mt5_agent_start` | Launch background autonomous scanning and execution worker. | `symbol: str`, `timeframe: str = "M15"`, `strategy: str = "smc"`, `scan_interval: int = 15`, `auto_trade: bool = False`, `risk_percent: float = 1.0`, `rr_ratio: float = 2.0`, `enable_breakeven: bool = True`, `be_trigger_points: float = 300.0` |
 | `mt5_agent_stop` | Terminate the background autonomous worker thread. | None |
 | `mt5_agent_status` | Query uptime, scan count, signals generated, and execution stats. | None |
 | `mt5_send_test_alert` | Dispatch test notification to Telegram / Webhook channels. | `message: str` |
+| `mt5_send_telegram_message` | **Custom Telegram Message**: Send any freeform text, trade alert, or daily summary to Telegram. | `message: str`, `chat_id: Optional[str]`, `parse_mode: str = "HTML"`, `token: Optional[str]` |
+| `mt5_send_telegram_photo` | **Telegram Chart Sender**: Send generated candlestick chart images (.png) directly to Telegram with trade plan captions. | `photo_path: str`, `caption: Optional[str]`, `chat_id: Optional[str]`, `token: Optional[str]` |
 
 #### 🛡️ Trading Credit Score (Risk Governance)
 | Tool Name | Description | Parameters |
