@@ -1,6 +1,6 @@
 # popmely: MetaTrader 5 (MT5) Model Context Protocol (MCP) Server
 
-[![Version](https://img.shields.io/badge/version-4.0.0-blue.svg?style=flat-square)](https://github.com/JonusNattapong/popmely)
+[![Version](https://img.shields.io/badge/version-4.5.0-blue.svg?style=flat-square)](https://github.com/JonusNattapong/popmely)
 [![Python](https://img.shields.io/badge/python-3.10%2B-brightgreen.svg?style=flat-square)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg?style=flat-square)](LICENSE)
 [![MCP](https://img.shields.io/badge/MCP-FastMCP%20Standard-purple.svg?style=flat-square)](https://modelcontextprotocol.io/)
@@ -8,26 +8,26 @@
 
 **popmely** is a production-grade, asynchronous **Model Context Protocol (MCP)** server providing seamless integration between MetaTrader 5 (MT5) and Large Language Models (LLMs) such as Claude, Antigravity, Cursor, and OpenAI Agents.
 
-It equips AI assistants with full-duplex control over financial markets—ranging from real-time price feeds, Smart Money Concept (SMC) structure analysis, bar-by-bar backtesting, automated risk calculation, and position lifecycle management, to a background autonomous trading bot with real-time Telegram alerts and a dynamic **Trading Credit Score** risk governance engine.
+It equips AI assistants with full-duplex control over financial markets—ranging from real-time price feeds, Smart Money Concept (SMC) structure analysis, bar-by-bar backtesting, automated risk calculation, and position lifecycle management, to a background autonomous trading bot with real-time Telegram alerts, a dynamic **Trading Credit Score** risk governance engine, and institutional ICT strategy models.
 
 ---
 
 ## Table of Contents
 
 1. [Key Features](#-key-features)
-2. [System Architecture](#-system-architecture)
-3. [MCP Interface Specification](#-mcp-interface-specification)
-   - [Tools (30 Tools)](#1-tools-30-callable-functions)
-   - [Resources (4 Endpoints)](#2-resources-read-only-state)
-   - [Prompts (2 Templates)](#3-prompts-pre-built-workflows)
-4. [Trading Credit Score Engine](#-trading-credit-score-engine-v40)
-5. [Smart Money Concepts (SMC) Analyzer](#-smart-money-concepts-smc-analyzer)
-6. [Autonomous Trading Agent](#-autonomous-trading-agent)
-7. [Installation & Setup](#-installation--setup)
-8. [Client Configuration](#-client-configuration)
-9. [Configuration Parameters](#-configuration-parameters)
-10. [Development & Testing](#-development--testing)
-11. [Risk Disclaimer](#-risk-disclaimer)
+2. [The Trader's Journey (Workflow)](#-the-traders-journey-workflow)
+3. [System Architecture](#-system-architecture)
+4. [MCP Interface Specification (45 Tools)](#-mcp-interface-specification)
+5. [Institutional & ICT Strategy Models](#-institutional--ict-strategy-models)
+6. [Trading Credit Score Engine](#-trading-credit-score-engine-v40)
+7. [Smart Money Concepts (SMC) Analyzer](#-smart-money-concepts-smc-analyzer)
+8. [Autonomous Trading Agent](#-autonomous-trading-agent)
+9. [Installation & Quickstart Guide](#-installation--quickstart-guide)
+10. [Client Configuration](#-client-configuration)
+11. [Configuration Parameters](#-configuration-parameters)
+12. [Project Evolution Journey (Changelog)](#-project-evolution-journey)
+13. [Development & Testing](#-development--testing)
+14. [Risk Disclaimer](#-risk-disclaimer)
 
 ---
 
@@ -39,6 +39,40 @@ It equips AI assistants with full-duplex control over financial markets—rangin
 - **Autonomous Strategy Engine**: Non-blocking background worker with configurable polling intervals, automated order execution, trailing stops, auto-breakeven, and Telegram push notifications.
 - **Event-Driven Backtester**: In-memory bar-by-bar simulation engine calculating Win Rate, Profit Factor, Expected Payoff, and Maximum Drawdown with granular trade logs.
 - **Strict Risk Safety Gates**: Lot size caps, max daily drawdown limits, mandatory stop-loss constraints, and slippage protection.
+
+---
+
+## 🗺️ The Trader's Journey (Workflow)
+
+```mermaid
+flowchart TD
+    Start([🌅 Market Open / Session Start]) --> Step1[<b>1. Market Briefing & Analysis</b><br>AI scans Daily Levels, Asian Range, & SMC Structure]
+    Step1 --> Step2[<b>2. Institutional Confluence Check</b><br>Score H4 Macro + H1 Structure + M15 FVG Retest]
+    
+    Step2 --> Decision1{Confluence >= 80%?}
+    Decision1 -- No --> Wait[⏳ Wait for Clear Setup / Liquidity Sweep]
+    Decision1 -- Yes --> Step3[<b>3. Risk & Credit Calibration</b><br>Check Credit Score Tier: 🟢/🟡/🟠/🔴<br>Calculate exact % Lot Size & R:R target]
+    
+    Step3 --> Step4[<b>4. Smart Order Execution</b><br>Execute via Market / Breakout Stop / Bracket OCO]
+    Step4 --> Step5[<b>5. Active Trade Lifecycle</b><br>Auto-Breakeven at +300 pts & Trailing Stop]
+    
+    Step5 --> Step6[<b>6. Post-Trade Review & Journal</b><br>Auto-deduct on SL / Recover on TP<br>Log into AI Trade Journal]
+    Step6 --> End([🌙 Daily Performance Summary])
+
+    style Start fill:#238636,stroke:#2ea043,color:#fff
+    style End fill:#1f6feb,stroke:#388bfd,color:#fff
+    style Step3 fill:#d29922,stroke:#bb8009,color:#000
+    style Step6 fill:#8957e5,stroke:#a371f7,color:#fff
+```
+
+### The 6-Step Execution Lifecycle:
+
+1. **Market Briefing**: Run `daily_market_briefing` to assess macro trend, support/resistance, and session ranges.
+2. **Institutional Confluence**: Run `mt5_confluence_matrix` or `mt5_analyze_silver_bullet` to confirm setups with $\ge 80\%$ probability.
+3. **Risk & Credit Score**: Verify `mt5_score_status` to ensure account is in **GREEN** or **YELLOW** tier; compute risk-weighted lot sizing.
+4. **Smart Execution**: Dispatch orders via `mt5_smart_order`, `mt5_place_bracket_order`, or `mt5_place_grid_orders`.
+5. **Lifecycle Management**: Background bot monitors trailing stops, executes auto-breakeven, and sends Telegram alerts.
+6. **Journal & Governance**: Review `mt5_get_trade_journal` for performance metrics, R:R analytics, and Credit Score health.
 
 ---
 
@@ -155,6 +189,7 @@ graph TD
 | `mt5_cancel_all_pending_orders` | Cancel all active pending orders across terminal in one click. | `symbol: str = ""` |
 | `mt5_get_trade_history` | Retrieve closed trade logs and historical deals for past N days. | `days: int = 7` |
 | `mt5_get_trade_history_range` | **Date Range PnL & Deals**: Retrieve closed trades and win rate stats between specific dates. | `start_time: str`, `end_time: Optional[str] = None`, `symbol: Optional[str] = None` |
+| `mt5_get_trade_journal` | **AI Trade Journey & Journal**: Generates detailed trade journey logs, R:R analytics, Credit Score impact, and AI feedback. | `days: int = 7`, `symbol: Optional[str] = None` |
 
 #### 🤖 Autonomous Agent Management
 | Tool Name | Description | Parameters |
@@ -422,6 +457,24 @@ TELEGRAM_BOT_TOKEN=your_bot_token_here
 TELEGRAM_CHAT_ID=your_chat_id_here
 WEBHOOK_URL=https://your-webhook-endpoint.com/api
 ```
+
+---
+
+## 🚀 Project Evolution Journey
+
+The evolution of `popmely` from a basic MT5 bridge to an institutional AI trading server:
+
+```
+v1.0.0 (Core Bridge) ──► v2.0.0 (SMC & Backtest) ──► v3.1.0 (Autonomous Bot) ──► v4.0.0 (Credit Score) ──► v4.5.0 (Institutional Mastery)
+```
+
+| Milestone | Version | Release Highlights | Key Tools Added |
+|:---|:---:|:---|:---|
+| **The Genesis Bridge** | `v1.0.0` | Initial bridge between MT5 terminal and AI models via MCP protocol. | Account Info, Quote Feed, Place/Close Order |
+| **SMC & Quantitative Engine** | `v2.0.0` | Introduced Smart Money Concepts analyzer and bar-by-bar backtest simulation. | BOS, CHoCH, OB, FVG, Backtest Engine |
+| **Autonomous AI & Protocol** | `v3.1.0` | Standardized to FastMCP, background autonomous scanning worker, and Telegram alerts. | Agent Worker, Auto-BE, Trailing Stop, Telegram Notifier |
+| **Trading Credit Score** | `v4.0.0` | Adaptive risk governance engine that scales lot sizes and halts trading on drawdown. | Credit Score Tiers (GREEN/YELLOW/ORANGE/CRITICAL) |
+| **Institutional Mastery** | `v4.5.0` | Institutional ICT strategies, Smart entry orders, Selective position closing, and Date range queries. | Silver Bullet, Judas Swing, IFVG, Confluence, Trade Journal (45 Tools) |
 
 ---
 

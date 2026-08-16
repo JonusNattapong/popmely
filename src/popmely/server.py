@@ -18,6 +18,7 @@ import popmely.tools.trading as trading_tool
 import popmely.tools.agent as agent_tool
 import popmely.tools.credit_score as score_tool
 import popmely.tools.institutional as inst_tool
+import popmely.tools.journal as journal_tool
 
 # Setup standard logging to stderr
 logging.basicConfig(
@@ -360,6 +361,14 @@ def mt5_get_trade_history_range(
 ) -> dict:
     """Get closed trade deals, win/loss stats, and realized PnL between specific dates (e.g. '2026-08-01' to '2026-08-15')."""
     return trading_tool.get_trade_history_range(start_time, end_time, symbol)
+
+@mcp.tool()
+def mt5_get_trade_journal(
+    days: int = 7,
+    symbol: Optional[str] = None
+) -> dict:
+    """Trade Journey & Performance Journal: Generates a complete trading journey breakdown combining closed deals, win/loss analytics, R:R stats, Credit Score impact, and AI behavioral feedback."""
+    return journal_tool.get_trade_journal(days, symbol)
 
 # =====================================================================
 # 7. AUTONOMOUS AGENT TOOLS
