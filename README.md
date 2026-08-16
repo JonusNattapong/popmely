@@ -93,7 +93,7 @@ graph TD
 
 ## 📋 MCP Interface Specification
 
-### 1. Tools (30 Callable Functions)
+### 1. Tools (35 Callable Functions)
 
 #### 💼 Account & Terminal
 | Tool Name | Description | Parameters |
@@ -129,11 +129,18 @@ graph TD
 | Tool Name | Description | Parameters |
 |:---|:---|:---|
 | `mt5_place_order` | Send Market BUY/SELL order with SL, TP, and magic number. | `symbol: str`, `action: str ("BUY"/"SELL")`, `volume: float`, `sl: float = 0.0`, `tp: float = 0.0`, `comment: str = ""` |
-| `mt5_place_pending_order` | Place pending Limit or Stop orders (`BUY_LIMIT`, `SELL_LIMIT`, etc.). | `symbol: str`, `order_type: str`, `price: float`, `volume: float`, `sl: float = 0.0`, `tp: float = 0.0` |
+| `mt5_place_pending_order` | Place pending Limit or Stop orders (`BUY_LIMIT`, `SELL_LIMIT`, `BUY_STOP`, `SELL_STOP`). | `symbol: str`, `order_type: str`, `price: float`, `volume: float`, `sl: float = 0.0`, `tp: float = 0.0` |
 | `mt5_get_positions` | List currently open market positions with floating PnL and tickets. | `symbol: str = ""` |
 | `mt5_modify_position` | Update Stop Loss or Take Profit of an active position. | `ticket: int`, `sl: float = 0.0`, `tp: float = 0.0` |
-| `mt5_close_position` | Close an active position by ticket ID with partial close support. | `ticket: int`, `lots: float = 0.0` |
+| `mt5_close_position` | Close an active position by ticket ID with partial close support. | `ticket: int`, `volume: float = 0.0` |
 | `mt5_close_all_positions` | Emergency liquidation of all active positions. | `symbol: str = ""` |
+| `mt5_close_profitable_positions` | Close only profitable open positions (Profit > min_profit_usd) to lock in gains. | `symbol: str = ""`, `min_profit_usd: float = 0.0` |
+| `mt5_close_losing_positions` | Close only losing open positions (Loss < -max_loss_usd) to cut losses immediately. | `symbol: str = ""`, `max_loss_usd: float = 0.0` |
+| `mt5_close_by_comment` | Close open positions matching a specific comment / order name tag (e.g. 'AI_SMC', 'Manual'). | `comment_query: str`, `symbol: str = ""` |
+| `mt5_close_by_magic` | Close open positions matching a specific EA Magic Number. | `magic_number: int`, `symbol: str = ""` |
+| `mt5_get_pending_orders` | List all active pending orders in terminal. | `symbol: str = ""` |
+| `mt5_cancel_pending_order` | Cancel a single pending order by ticket ID. | `ticket: int` |
+| `mt5_cancel_all_pending_orders` | Cancel all active pending orders across terminal in one click. | `symbol: str = ""` |
 | `mt5_get_trade_history` | Retrieve closed trade logs and historical deals. | `days: int = 7` |
 
 #### 🤖 Autonomous Agent Management

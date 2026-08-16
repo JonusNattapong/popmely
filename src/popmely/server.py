@@ -204,14 +204,39 @@ def mt5_close_all_positions(symbol: Optional[str] = None) -> dict:
     return trading_tool.close_all_positions(symbol)
 
 @mcp.tool()
+def mt5_close_profitable_positions(symbol: Optional[str] = None, min_profit_usd: float = 0.0) -> dict:
+    """Close only profitable open positions (floating profit > min_profit_usd) to instantly lock in gains."""
+    return trading_tool.close_profitable_positions(symbol, min_profit_usd)
+
+@mcp.tool()
+def mt5_close_losing_positions(symbol: Optional[str] = None, max_loss_usd: float = 0.0) -> dict:
+    """Close only losing open positions (floating loss < -abs(max_loss_usd)) to cut losses immediately."""
+    return trading_tool.close_losing_positions(symbol, max_loss_usd)
+
+@mcp.tool()
+def mt5_close_by_comment(comment_query: str, symbol: Optional[str] = None) -> dict:
+    """Close open positions matching a specific comment / strategy tag (e.g. 'AI_SMC', 'Manual', 'Breakout')."""
+    return trading_tool.close_by_comment(comment_query, symbol)
+
+@mcp.tool()
+def mt5_close_by_magic(magic_number: int, symbol: Optional[str] = None) -> dict:
+    """Close open positions matching a specific Magic Number (Bot ID)."""
+    return trading_tool.close_by_magic(magic_number, symbol)
+
+@mcp.tool()
 def mt5_get_pending_orders(symbol: Optional[str] = None) -> dict:
     """Get all active pending orders or filter by symbol."""
     return trading_tool.get_pending_orders(symbol)
 
 @mcp.tool()
 def mt5_cancel_pending_order(ticket: int) -> dict:
-    """Cancel a pending order by ticket ID."""
+    """Cancel a single pending order by ticket ID."""
     return trading_tool.cancel_pending_order(ticket)
+
+@mcp.tool()
+def mt5_cancel_all_pending_orders(symbol: Optional[str] = None) -> dict:
+    """Cancel all active pending orders (BUY_STOP, SELL_STOP, BUY_LIMIT, SELL_LIMIT) in one click."""
+    return trading_tool.cancel_all_pending_orders(symbol)
 
 @mcp.tool()
 def mt5_get_trade_history(days: int = 7, symbol: Optional[str] = None) -> dict:

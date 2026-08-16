@@ -263,10 +263,139 @@ def close_all_positions(symbol: Optional[str] = None) -> Dict[str, Any]:
     results = []
     for pos in positions:
         res = close_position(pos.ticket)
-        results.append({"ticket": pos.ticket, "symbol": pos.symbol, "result": res})
+        results.append({"ticket": pos.ticket, "symbol": pos.symbol, "profit": pos.profit, "result": res})
 
     return {
         "status": "success",
+        "closed_count": len(results),
+        "details": results
+    }
+
+def close_profitable_positions(symbol: Optional[str] = None, min_profit_usd: float = 0.0) -> Dict[str, Any]:
+    """Close only profitable open positions (floating profit > min_profit_usd) to lock in gains."""
+    if not MT5ConnectionManager.ensure_connected():
+        return {"status": "error", "message": "MT5 not connected"}
+
+    positions = mt5.positions_get(symbol=symbol) if symbol else mt5.positions_get()
+    if positions is None or len(positions) == 0:
+        return {"status": "success", "message": "No open positions found", "closed_count": 0}
+
+    profitable = [p for p in positions if p.profit > min_profit_usd]
+    if not profitable:
+        return {
+            "status": "success",
+            "message": f"No positions found with profit > ${min_profit_usd:.2f}",
+            "closed_count": 0
+        }
+
+    results = []
+    total_locked_profit = 0.0
+    for pos in profitable:
+        res = close_position(pos.ticket)
+        if res.get("status") == "success":
+            total_locked_profit += pos.profit
+        results.append({"ticket": pos.ticket, "symbol": pos.symbol, "profit": pos.profit, "result": res})
+
+    return {
+        "status": "success",
+        "message": f"Closed {len(results)} profitable positions. Total profit locked: ${total_locked_profit:.2f}",
+        "closed_count": len(results),
+        "total_profit_locked": round(total_locked_profit, 2),
+        "details": results
+    }
+
+def close_losing_positions(symbol: Optional[str] = None, max_loss_usd: float = 0.0) -> Dict[str, Any]:
+    """Close only losing open positions (floating loss < -abs(max_loss_usd)) to cut losses immediately."""
+    if not MT5ConnectionManager.ensure_connected():
+        return {"status": "error", "message": "MT5 not connected"}
+
+    positions = mt5.positions_get(symbol=symbol) if symbol else mt5.positions_get()
+    if positions is None or len(positions) == 0:
+        return {"status": "success", "message": "No open positions found", "closed_count": 0}
+
+    threshold = -abs(max_loss_usd)
+    losing = [p for p in positions if p.profit < threshold]
+    if not losing:
+        return {
+            "status": "success",
+            "message": f"No losing positions found with loss beyond ${abs(max_loss_usd):.2f}",
+            "closed_count": 0
+        }
+
+    results = []
+    total_loss_cut = 0.0
+    for pos in losing:
+        res = close_position(pos.ticket)
+        if res.get("status") == "success":
+            total_loss_cut += pos.profit
+        results.append({"ticket": pos.ticket, "symbol": pos.symbol, "loss": pos.profit, "result": res})
+
+    return {
+        "status": "success",
+        "message": f"Cut losses on {len(results)} positions. Total loss: ${total_loss_cut:.2f}",
+        "closed_count": len(results),
+        "total_loss_cut": round(total_loss_cut, 2),
+        "details": results
+    }
+
+def close_by_comment(comment_query: str, symbol: Optional[str] = None) -> Dict[str, Any]:
+    """Close open positions matching a specific comment / order name tag (e.g. 'AI_SMC', 'Manual', 'Breakout')."""
+    if not MT5ConnectionManager.ensure_connected():
+        return {"status": "error", "message": "MT5 not connected"}
+
+    if not comment_query:
+        return {"status": "error", "message": "comment_query is required"}
+
+    positions = mt5.positions_get(symbol=symbol) if symbol else mt5.positions_get()
+    if positions is None or len(positions) == 0:
+        return {"status": "success", "message": "No open positions found", "closed_count": 0}
+
+    query_lower = comment_query.lower()
+    matching = [p for p in positions if query_lower in (p.comment or "").lower()]
+    if not matching:
+        return {
+            "status": "success",
+            "message": f"No positions found with comment containing '{comment_query}'",
+            "closed_count": 0
+        }
+
+    results = []
+    for pos in matching:
+        res = close_position(pos.ticket)
+        results.append({"ticket": pos.ticket, "symbol": pos.symbol, "comment": pos.comment, "profit": pos.profit, "result": res})
+
+    return {
+        "status": "success",
+        "message": f"Closed {len(results)} positions matching comment '{comment_query}'",
+        "closed_count": len(results),
+        "details": results
+    }
+
+def close_by_magic(magic_number: int, symbol: Optional[str] = None) -> Dict[str, Any]:
+    """Close open positions matching a specific Magic Number (Bot ID)."""
+    if not MT5ConnectionManager.ensure_connected():
+        return {"status": "error", "message": "MT5 not connected"}
+
+    positions = mt5.positions_get(symbol=symbol) if symbol else mt5.positions_get()
+    if positions is None or len(positions) == 0:
+        return {"status": "success", "message": "No open positions found", "closed_count": 0}
+
+    matching = [p for p in positions if p.magic == magic_number]
+    if not matching:
+        return {
+            "status": "success",
+            "message": f"No positions found with Magic Number {magic_number}",
+            "closed_count": 0
+        }
+
+    results = []
+    for pos in matching:
+        res = close_position(pos.ticket)
+        results.append({"ticket": pos.ticket, "symbol": pos.symbol, "magic": pos.magic, "profit": pos.profit, "result": res})
+
+    return {
+        "status": "success",
+        "message": f"Closed {len(results)} positions matching Magic Number {magic_number}",
         "closed_count": len(results),
         "details": results
     }
@@ -302,6 +431,27 @@ def cancel_pending_order(ticket: int) -> Dict[str, Any]:
         return {"status": "error", "message": f"Failed to cancel order #{ticket}: {err}"}
 
     return {"status": "success", "cancelled_ticket": ticket}
+
+def cancel_all_pending_orders(symbol: Optional[str] = None) -> Dict[str, Any]:
+    """Cancel all active pending orders (BUY_STOP, SELL_STOP, BUY_LIMIT, SELL_LIMIT) or filter by symbol."""
+    if not MT5ConnectionManager.ensure_connected():
+        return {"status": "error", "message": "MT5 not connected"}
+
+    orders = mt5.orders_get(symbol=symbol) if symbol else mt5.orders_get()
+    if orders is None or len(orders) == 0:
+        return {"status": "success", "message": "No pending orders to cancel", "cancelled_count": 0}
+
+    results = []
+    for ord_item in orders:
+        res = cancel_pending_order(ord_item.ticket)
+        results.append({"ticket": ord_item.ticket, "symbol": ord_item.symbol, "type": ord_item.type, "result": res})
+
+    return {
+        "status": "success",
+        "message": f"Cancelled {len(results)} pending orders",
+        "cancelled_count": len(results),
+        "details": results
+    }
 
 def get_trade_history(days: int = 7, symbol: Optional[str] = None) -> Dict[str, Any]:
     """Get closed trade deals and profit history for the past N days."""
