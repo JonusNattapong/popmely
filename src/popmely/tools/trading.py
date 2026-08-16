@@ -582,6 +582,187 @@ def close_by_magic(magic_number: int, symbol: Optional[str] = None) -> Dict[str,
         "details": results
     }
 
+# =====================================================================
+# SMART SCALE-OUT & PROFIT LOCKING
+# =====================================================================
+
+def take_partial_profit(
+    ticket: int,
+    close_percent: float = 50.0,
+    move_sl_to_be: bool = True,
+    be_offset_points: float = 10.0
+) -> Dict[str, Any]:
+    """Close a percentage of an active position (e.g. 50% or 33%) and optionally move Stop Loss to Breakeven (+offset points) to make trade risk-free."""
+    if not MT5ConnectionManager.ensure_connected():
+        return {"status": "error", "message": "MT5 not connected"}
+
+    positions = mt5.positions_get(ticket=ticket)
+    if positions is None or len(positions) == 0:
+        return {"status": "error", "message": f"Position ticket #{ticket} not found"}
+
+    pos = positions[0]
+    total_volume = float(pos.volume)
+    close_percent = max(1.0, min(99.0, close_percent))
+
+    # Calculate partial volume respecting step
+    info = mt5.symbol_info(pos.symbol)
+    step = info.volume_step if info else 0.01
+    min_vol = info.volume_min if info else 0.01
+
+    raw_vol = total_volume * (close_percent / 100.0)
+    close_vol = round(round(raw_vol / step) * step, 2)
+    close_vol = max(min_vol, min(total_volume - min_vol, close_vol))
+
+    if close_vol <= 0 or close_vol >= total_volume:
+        return {
+            "status": "error",
+            "message": f"Position volume {total_volume} is too small to split ({close_percent}%). Minimum volume is {min_vol}."
+        }
+
+    remaining_vol = round(total_volume - close_vol, 2)
+
+    # 1. Close partial volume
+    close_res = close_position(ticket, volume=close_vol)
+    if close_res.get("status") != "success":
+        return close_res
+
+    # Estimate realized partial profit
+    est_realized_profit = round(pos.profit * (close_vol / total_volume), 2)
+
+    # Recover Trading Credit Score if profitable
+    if est_realized_profit > 0:
+        try:
+            from popmely.tools.credit_score import credit_score
+            if credit_score.initialized:
+                credit_score.recover(est_realized_profit)
+        except Exception:
+            pass
+
+    # 2. Move Stop Loss to Break-Even if requested
+    be_modified = False
+    new_sl_price = pos.sl
+    point = info.point if info else 0.01
+
+    if move_sl_to_be:
+        entry_p = float(pos.price_open)
+        if pos.type == mt5.ORDER_TYPE_BUY:
+            new_sl = entry_p + (be_offset_points * point)
+        else:
+            new_sl = entry_p - (be_offset_points * point)
+
+        mod_res = modify_position(ticket, sl=new_sl, tp=pos.tp)
+        if mod_res.get("status") == "success":
+            be_modified = True
+            new_sl_price = round(new_sl, 5)
+
+    # 3. Log to SQLite Trade Journal
+    try:
+        from popmely.db import add_trade_note
+        add_trade_note(
+            symbol=pos.symbol,
+            note=f"Smart Scale-Out: Closed {close_vol} lots ({close_percent}%) at profit ${est_realized_profit:.2f}. " +
+                 (f"SL moved to Breakeven @ {new_sl_price}." if be_modified else "SL unchanged."),
+            deal_ticket=ticket,
+            action="BUY" if pos.type == mt5.ORDER_TYPE_BUY else "SELL",
+            volume=close_vol,
+            entry_price=pos.price_open,
+            profit_usd=est_realized_profit,
+            strategy="SCALE_OUT_LOCK_PROFIT",
+            tags="ScaleOut, LockProfit, RiskFree",
+            ai_reflection="Risk-free position secured. Remaining volume riding trend."
+        )
+    except Exception:
+        pass
+
+    return {
+        "status": "success",
+        "ticket": ticket,
+        "symbol": pos.symbol,
+        "original_volume": total_volume,
+        "closed_volume": close_vol,
+        "remaining_volume": remaining_vol,
+        "close_percent": f"{close_percent}%",
+        "estimated_realized_profit_usd": est_realized_profit,
+        "sl_moved_to_breakeven": be_modified,
+        "new_sl_price": new_sl_price,
+        "is_risk_free": be_modified,
+        "message": f"Successfully locked in ${est_realized_profit:.2f} profit by closing {close_vol} lots. Remaining {remaining_vol} lots are {'100% Risk-Free (SL @ BE)' if be_modified else 'active'}."
+    }
+
+def scale_out_all_profitable(
+    min_profit_usd: float = 5.0,
+    close_percent: float = 50.0,
+    move_sl_to_be: bool = True
+) -> Dict[str, Any]:
+    """Bulk scale-out across all profitable open positions (profit > min_profit_usd), closing N% and securing remaining volume at breakeven."""
+    if not MT5ConnectionManager.ensure_connected():
+        return {"status": "error", "message": "MT5 not connected"}
+
+    positions = mt5.positions_get()
+    if positions is None or len(positions) == 0:
+        return {"status": "success", "message": "No open positions found", "scaled_count": 0}
+
+    profitable = [p for p in positions if p.profit >= min_profit_usd]
+    if not profitable:
+        return {
+            "status": "success",
+            "message": f"No positions found with floating profit >= ${min_profit_usd:.2f}",
+            "scaled_count": 0
+        }
+
+    results = []
+    total_locked_profit = 0.0
+
+    for pos in profitable:
+        res = take_partial_profit(pos.ticket, close_percent=close_percent, move_sl_to_be=move_sl_to_be)
+        if res.get("status") == "success":
+            total_locked_profit += res.get("estimated_realized_profit_usd", 0.0)
+        results.append(res)
+
+    return {
+        "status": "success",
+        "message": f"Scaled out of {len(results)} profitable positions. Total locked-in profit: ${total_locked_profit:.2f}",
+        "scaled_count": len(results),
+        "total_locked_profit_usd": round(total_locked_profit, 2),
+        "details": results
+    }
+
+def lock_profit_target(
+    ticket: int,
+    lock_profit_points: float = 100.0
+) -> Dict[str, Any]:
+    """Step up Stop Loss to a guaranteed positive profit level (+lock_profit_points beyond entry price)."""
+    if not MT5ConnectionManager.ensure_connected():
+        return {"status": "error", "message": "MT5 not connected"}
+
+    positions = mt5.positions_get(ticket=ticket)
+    if positions is None or len(positions) == 0:
+        return {"status": "error", "message": f"Position ticket #{ticket} not found"}
+
+    pos = positions[0]
+    info = mt5.symbol_info(pos.symbol)
+    point = info.point if info else 0.01
+
+    entry_p = float(pos.price_open)
+    if pos.type == mt5.ORDER_TYPE_BUY:
+        new_sl = entry_p + (lock_profit_points * point)
+    else:
+        new_sl = entry_p - (lock_profit_points * point)
+
+    res = modify_position(ticket, sl=new_sl, tp=pos.tp)
+    if res.get("status") != "success":
+        return res
+
+    return {
+        "status": "success",
+        "ticket": ticket,
+        "symbol": pos.symbol,
+        "entry_price": entry_p,
+        "locked_profit_points": lock_profit_points,
+        "new_guaranteed_sl": round(new_sl, 5),
+        "message": f"Position #{ticket} SL updated to {new_sl:.5f} (guaranteeing +{lock_profit_points} pts profit)."
+    }
+
 def get_pending_orders(symbol: Optional[str] = None) -> Dict[str, Any]:
     """Get all active pending orders or filter by symbol."""
     if not MT5ConnectionManager.ensure_connected():

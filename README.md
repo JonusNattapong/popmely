@@ -17,7 +17,7 @@ It equips AI assistants with full-duplex control over financial markets—rangin
 1. [Key Features](#-key-features)
 2. [The Trader's Journey (Workflow)](#-the-traders-journey-workflow)
 3. [System Architecture](#-system-architecture)
-4. [MCP Interface Specification (54 Tools)](#-mcp-interface-specification)
+4. [MCP Interface Specification (57 Tools)](#-mcp-interface-specification)
 5. [Institutional & ICT Strategy Models](#-institutional--ict-strategy-models)
 6. [Trading Credit Score Engine](#-trading-credit-score-engine-v40)
 7. [Smart Money Concepts (SMC) Analyzer](#-smart-money-concepts-smc-analyzer)
@@ -127,7 +127,7 @@ graph TD
 
 ## 📋 MCP Interface Specification
 
-### 1. Tools (54 Callable Functions)
+### 1. Tools (57 Callable Functions)
 
 #### 💼 Account & Terminal
 | Tool Name | Description | Parameters |
@@ -189,6 +189,9 @@ graph TD
 | `mt5_close_position` | Close an active position by ticket ID with partial close support. | `ticket: int`, `volume: float = 0.0` |
 | `mt5_close_all_positions` | Emergency liquidation of all active positions. | `symbol: str = ""` |
 | `mt5_close_profitable_positions` | Close only profitable open positions (Profit > min_profit_usd) to lock in gains. | `symbol: str = ""`, `min_profit_usd: float = 0.0` |
+| `mt5_take_partial_profit` | **Smart Scale-Out**: Close N% (e.g. 50%) of a position, lock profit into account, and move SL to Breakeven (100% Risk-Free). | `ticket: int`, `close_percent: float = 50.0`, `move_sl_to_be: bool = True`, `be_offset_points: float = 10.0` |
+| `mt5_scale_out_all_profitable` | **Bulk Scale-Out**: Close N% across all profitable positions and secure remaining volumes at Breakeven in 1 click. | `min_profit_usd: float = 5.0`, `close_percent: float = 50.0`, `move_sl_to_be: bool = True` |
+| `mt5_lock_profit_target` | **Lock Guaranteed Profit**: Move Stop Loss to a guaranteed positive profit level (+points beyond entry). | `ticket: int`, `lock_profit_points: float = 100.0` |
 | `mt5_close_losing_positions` | Close only losing open positions (Loss < -max_loss_usd) to cut losses immediately. | `symbol: str = ""`, `max_loss_usd: float = 0.0` |
 | `mt5_close_by_comment` | Close open positions matching a specific comment / order name tag (e.g. 'AI_SMC', 'Manual'). | `comment_query: str`, `symbol: str = ""` |
 | `mt5_close_by_magic` | Close open positions matching a specific EA Magic Number. | `magic_number: int`, `symbol: str = ""` |

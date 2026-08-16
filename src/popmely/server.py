@@ -321,6 +321,42 @@ def mt5_close_profitable_positions(symbol: Optional[str] = None, min_profit_usd:
     return trading_tool.close_profitable_positions(symbol, min_profit_usd)
 
 @mcp.tool()
+def mt5_take_partial_profit(
+    ticket: int,
+    close_percent: float = 50.0,
+    move_sl_to_be: bool = True,
+    be_offset_points: float = 10.0
+) -> dict:
+    """Smart Scale-Out: Close a percentage (e.g. 50% or 33%) of an active position and automatically move Stop Loss to Breakeven (+offset points) to make the trade 100% Risk-Free."""
+    return trading_tool.take_partial_profit(
+        ticket=ticket,
+        close_percent=close_percent,
+        move_sl_to_be=move_sl_to_be,
+        be_offset_points=be_offset_points
+    )
+
+@mcp.tool()
+def mt5_scale_out_all_profitable(
+    min_profit_usd: float = 5.0,
+    close_percent: float = 50.0,
+    move_sl_to_be: bool = True
+) -> dict:
+    """Bulk Smart Scale-Out: Close N% of all profitable positions (profit >= min_profit_usd) and secure all remaining volumes at Breakeven in 1 call."""
+    return trading_tool.scale_out_all_profitable(
+        min_profit_usd=min_profit_usd,
+        close_percent=close_percent,
+        move_sl_to_be=move_sl_to_be
+    )
+
+@mcp.tool()
+def mt5_lock_profit_target(
+    ticket: int,
+    lock_profit_points: float = 100.0
+) -> dict:
+    """Lock Guaranteed Profit: Step up Stop Loss to a guaranteed positive profit level (+lock_profit_points beyond entry price)."""
+    return trading_tool.lock_profit_target(ticket=ticket, lock_profit_points=lock_profit_points)
+
+@mcp.tool()
 def mt5_close_losing_positions(symbol: Optional[str] = None, max_loss_usd: float = 0.0) -> dict:
     """Close only losing open positions (floating loss < -abs(max_loss_usd)) to cut losses immediately."""
     return trading_tool.close_losing_positions(symbol, max_loss_usd)
