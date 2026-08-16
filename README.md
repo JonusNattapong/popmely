@@ -93,7 +93,7 @@ graph TD
 
 ## 📋 MCP Interface Specification
 
-### 1. Tools (38 Callable Functions)
+### 1. Tools (42 Callable Functions)
 
 #### 💼 Account & Terminal
 | Tool Name | Description | Parameters |
@@ -114,6 +114,14 @@ graph TD
 |:---|:---|:---|
 | `mt5_analyze_technical` | Calculate EMAs (20, 50, 200), RSI, MACD, ATR, Bollinger Bands. | `symbol: str`, `timeframe: str = "M15"`, `count: int = 100` |
 | `mt5_analyze_smc` | Full SMC analysis: BOS, CHoCH, Order Blocks, FVGs, OTE levels. | `symbol: str`, `timeframe: str = "M15"`, `count: int = 100` |
+
+#### 👑 Institutional & ICT Strategy Tools (New)
+| Tool Name | Description | Parameters |
+|:---|:---|:---|
+| `mt5_analyze_silver_bullet` | **ICT Silver Bullet Analyzer**: Liquidity Sweeps, MSS displacement, and unmitigated FVG trigger plans (1:2.5 R:R). | `symbol: str = "XAUUSD"`, `timeframe: str = "M15"`, `count: int = 100` |
+| `mt5_detect_judas_swing` | **Judas Swing & Asian Sweep**: Detects London/NY open stop hunts above/below Asian Range and generates sniper reversals. | `symbol: str = "XAUUSD"`, `count: int = 120` |
+| `mt5_analyze_ifvg` | **Inversion FVG (IFVG) Scanner**: Tracks broken FVGs that have inverted roles into high-probability support/resistance. | `symbol: str = "XAUUSD"`, `timeframe: str = "M15"`, `count: int = 100` |
+| `mt5_confluence_matrix` | **Multi-Timeframe Confluence Matrix**: Computes a 0-100% Institutional Confluence Score across H4, H1, M15, and RSI. | `symbol: str = "XAUUSD"` |
 
 #### 🔬 Backtesting Engine
 | Tool Name | Description | Parameters |

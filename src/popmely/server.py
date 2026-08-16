@@ -17,6 +17,7 @@ import popmely.tools.risk as risk_tool
 import popmely.tools.trading as trading_tool
 import popmely.tools.agent as agent_tool
 import popmely.tools.credit_score as score_tool
+import popmely.tools.institutional as inst_tool
 
 # Setup standard logging to stderr
 logging.basicConfig(
@@ -105,6 +106,43 @@ def mt5_run_backtest(
         risk_percent=risk_percent,
         rr_ratio=rr_ratio
     )
+
+# =====================================================================
+# 5. INSTITUTIONAL & ICT STRATEGY TOOLS
+# =====================================================================
+
+@mcp.tool()
+def mt5_analyze_silver_bullet(
+    symbol: str = "XAUUSD",
+    timeframe: str = "M15",
+    count: int = 100
+) -> dict:
+    """ICT Silver Bullet Analyzer: Detects Liquidity Sweeps (BSL/SSL), Market Structure Shift (MSS) displacement, and unmitigated FVG triggers. Returns structured execution plans with entry, SL, and 1:2.5 R:R TP."""
+    return inst_tool.analyze_silver_bullet(symbol, timeframe, count)
+
+@mcp.tool()
+def mt5_detect_judas_swing(
+    symbol: str = "XAUUSD",
+    count: int = 120
+) -> dict:
+    """Judas Swing & Asian Range Sweep: Detects false breakout manipulation above Asian High / below Asian Low at London/NY open and generates sniper reversal targets."""
+    return inst_tool.detect_judas_swing(symbol, count)
+
+@mcp.tool()
+def mt5_analyze_ifvg(
+    symbol: str = "XAUUSD",
+    timeframe: str = "M15",
+    count: int = 100
+) -> dict:
+    """Inversion Fair Value Gap (IFVG) Scanner: Scans for broken FVGs that have inverted their role into high-probability support (Bullish IFVG) or resistance (Bearish IFVG) zones."""
+    return inst_tool.analyze_ifvg(symbol, timeframe, count)
+
+@mcp.tool()
+def mt5_confluence_matrix(
+    symbol: str = "XAUUSD"
+) -> dict:
+    """Multi-Timeframe Institutional Confluence Matrix: Computes a comprehensive 0-100% confluence score across H4 (Macro Bias), H1 (Structure & OBs), M15 (FVG Retest), and RSI Momentum."""
+    return inst_tool.calculate_confluence_matrix(symbol)
 
 # =====================================================================
 # 5. RISK MANAGEMENT TOOLS

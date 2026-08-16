@@ -86,6 +86,7 @@ def detect_fvgs(df: pd.DataFrame) -> List[Dict[str, Any]]:
             mitigated = any(lows[k] <= gap_bottom for k in range(i + 3, n))
             partially_filled = any(lows[k] < gap_top for k in range(i + 3, n))
             fvgs.append({
+                "bar_index": i + 1,
                 "type": "BULLISH_FVG",
                 "top": round(float(gap_top), 5),
                 "bottom": round(float(gap_bottom), 5),
@@ -100,6 +101,7 @@ def detect_fvgs(df: pd.DataFrame) -> List[Dict[str, Any]]:
             mitigated = any(highs[k] >= gap_top for k in range(i + 3, n))
             partially_filled = any(highs[k] > gap_bottom for k in range(i + 3, n))
             fvgs.append({
+                "bar_index": i + 1,
                 "type": "BEARISH_FVG",
                 "top": round(float(gap_top), 5),
                 "bottom": round(float(gap_bottom), 5),
