@@ -17,7 +17,7 @@ It equips AI assistants with full-duplex control over financial markets—rangin
 1. [Key Features](#-key-features)
 2. [The Trader's Journey (Workflow)](#-the-traders-journey-workflow)
 3. [System Architecture](#-system-architecture)
-4. [MCP Interface Specification (72 Tools)](#-mcp-interface-specification)
+4. [MCP Interface Specification (73 Tools)](#-mcp-interface-specification)
 5. [Institutional & ICT Strategy Models](#-institutional--ict-strategy-models)
 6. [Trading Credit Score Engine](#-trading-credit-score-engine-v40)
 7. [Smart Money Concepts (SMC) Analyzer](#-smart-money-concepts-smc-analyzer)
@@ -127,7 +127,7 @@ graph TD
 
 ## 📋 MCP Interface Specification
 
-### 1. Tools (72 Callable Functions)
+### 1. Tools (73 Callable Functions)
 
 #### 💼 Account & Terminal
 | Tool Name | Description | Parameters |
@@ -248,14 +248,15 @@ graph TD
 | `mt5_get_config` | **Inspect Settings**: View current runtime configuration settings, Telegram credentials, and safety limits (masked for security). | `masked: bool = True` |
 | `mt5_set_config` | **Dynamic Setup**: Configure Telegram Bot Token, Chat ID, Webhooks, Max Lot Size, and Risk Limits directly via MCP without server restart. | `telegram_bot_token: Optional[str]`, `telegram_chat_id: Optional[str]`, `webhook_url: Optional[str]`, `default_symbol: Optional[str]`, `max_lot_size: Optional[float]`, `max_daily_drawdown_percent: Optional[float]`, `require_sl: Optional[bool]`, `persist_to_env: bool = True` |
 
-#### 🌐 Polymarket Prediction Market Suite (New)
+#### 🌐 Polymarket Prediction Market Suite (Live Mainnet)
 | Tool Name | Description | Parameters |
 |:---|:---|:---|
 | `poly_get_markets` | **Market Discovery**: Search and discover Polymarket event prediction markets, odds, volume, and outcome tokens. | `query: Optional[str] = None`, `limit: int = 10`, `active: bool = True` |
 | `poly_get_orderbook` | **Live Orderbook**: Retrieve live Level 2 bid/ask orderbook and spread for a specific outcome token. | `token_id: str` |
 | `poly_get_portfolio` | **Portfolio & Positions**: Query active open positions and total portfolio value for a given wallet address. | `user_address: Optional[str] = None` |
 | `poly_get_trade_history` | **Trade Audit**: Query on-chain closed trade history and executed fills on Polymarket. | `user_address: Optional[str] = None`, `limit: int = 20` |
-| `poly_place_order` | **Order Execution**: Place limit prediction orders on Polymarket (Paper Trading simulation or Live Mainnet execution). | `token_id: str`, `side: str = "BUY"`, `price: float = 0.50`, `size_usd: float = 10.0`, `paper: bool = True` |
+| `poly_place_order` | **Live Order Execution**: Place real live limit prediction orders directly on Polymarket CLOB Mainnet using your wallet Private Key. | `token_id: str`, `side: str = "BUY"`, `price: float = 0.50`, `size_usd: float = 10.0` |
+| `poly_cancel_order` | **Cancel Live Order**: Cancel an active open limit order on Polymarket CLOB Mainnet. | `order_id: str` |
 
 ---
 

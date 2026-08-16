@@ -184,17 +184,16 @@ def poly_get_trade_history(
 
 
 # =====================================================================
-# 3. ORDER EXECUTION (PAPER & LIVE CLOB)
+# 3. LIVE ORDER EXECUTION & MANAGEMENT (REAL MAINNET CLOB)
 # =====================================================================
 
 def poly_place_order(
     token_id: str,
     side: str = "BUY",
     price: float = 0.50,
-    size_usd: float = 10.0,
-    paper: bool = True
+    size_usd: float = 10.0
 ) -> Dict[str, Any]:
-    """Place a limit order on Polymarket. Supports Paper Trading simulation or Live Mainnet execution."""
+    """Place a real live limit order directly on Polymarket CLOB Mainnet using your wallet Private Key."""
     side_clean = side.upper()
     if side_clean not in ("BUY", "SELL"):
         return {"status": "error", "message": "Side must be 'BUY' or 'SELL'"}
@@ -203,23 +202,9 @@ def poly_place_order(
         return {"status": "error", "message": "Price must be between 0.01 and 0.99 (representing 1% to 99% probability)"}
 
     shares = round(size_usd / price, 2)
+    if shares <= 0:
+        return {"status": "error", "message": "Order size too small to purchase shares"}
 
-    if paper:
-        # Paper trading simulation
-        return {
-            "status": "success",
-            "mode": "PAPER_TRADING",
-            "token_id": token_id,
-            "side": side_clean,
-            "price": price,
-            "size_usd": size_usd,
-            "estimated_shares": shares,
-            "potential_return_usd": round(shares * 1.0, 2),
-            "potential_profit_usd": round((shares * 1.0) - size_usd, 2),
-            "message": f"Paper order placed: {side_clean} {shares} shares @ {price} (${size_usd} USD)"
-        }
-
-    # Live CLOB Execution
     pk = PRIVATE_KEY
     if not pk:
         return {"status": "error", "message": "PRIVATE_KEY not configured in .env for live Polymarket execution"}
@@ -256,7 +241,43 @@ def poly_place_order(
             "side": side_clean,
             "price": price,
             "shares": shares,
-            "raw_response": resp
+            "size_usd": size_usd,
+            "raw_response": resp,
+            "message": f"Real order placed on Polymarket: {side_clean} {shares} shares @ {price} (${size_usd} USD)"
         }
     except Exception as e:
         return {"status": "error", "mode": "LIVE_MAINNET", "message": f"Live Polymarket order execution failed: {e}"}
+
+
+def poly_cancel_order(order_id: str) -> Dict[str, Any]:
+    """Cancel an active open order on Polymarket CLOB Mainnet."""
+    if not order_id:
+        return {"status": "error", "message": "order_id is required"}
+
+    pk = PRIVATE_KEY
+    if not pk:
+        return {"status": "error", "message": "PRIVATE_KEY not configured in .env"}
+
+    if not pk.startswith("0x"):
+        pk = f"0x{pk}"
+
+    try:
+        from py_clob_client.client import ClobClient
+
+        client = ClobClient(
+            host=CLOB_BASE_URL,
+            chain_id=137,
+            key=pk
+        )
+        creds = client.create_or_derive_api_creds()
+        client.set_api_creds(creds)
+
+        resp = client.cancel(order_id)
+        return {
+            "status": "success",
+            "mode": "LIVE_MAINNET",
+            "canceled_order_id": order_id,
+            "response": resp
+        }
+    except Exception as e:
+        return {"status": "error", "message": f"Cancel order failed: {e}"}

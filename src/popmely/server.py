@@ -835,11 +835,15 @@ def poly_place_order(
     token_id: str,
     side: str = "BUY",
     price: float = 0.50,
-    size_usd: float = 10.0,
-    paper: bool = True
+    size_usd: float = 10.0
 ) -> dict:
-    """Place a limit order on Polymarket. Supports Paper Trading simulation (default) or Live Mainnet execution."""
-    return poly_tool.poly_place_order(token_id=token_id, side=side, price=price, size_usd=size_usd, paper=paper)
+    """Place a real live limit order directly on Polymarket CLOB Mainnet using your wallet Private Key."""
+    return poly_tool.poly_place_order(token_id=token_id, side=side, price=price, size_usd=size_usd)
+
+@mcp.tool()
+def poly_cancel_order(order_id: str) -> dict:
+    """Cancel an active open order on Polymarket CLOB Mainnet."""
+    return poly_tool.poly_cancel_order(order_id=order_id)
 
 # =====================================================================
 # 14. MAIN ENTRYPOINT
