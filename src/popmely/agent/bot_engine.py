@@ -169,7 +169,7 @@ class AutonomousTradingBot:
         # 3. Fetch recent candles
         from popmely.tools.market_data import TIMEFRAME_MAP
         from popmely.tools.risk import calculate_lot_size
-        from popmely.tools.trading import place_order
+        from popmely.tools.trading import place_order, place_pending_order
         import pandas as pd
 
         tf = TIMEFRAME_MAP.get(self.timeframe.upper(), mt5.TIMEFRAME_M15)
@@ -228,19 +228,35 @@ class AutonomousTradingBot:
 
             # Auto Execute Order if enabled
             if self.auto_trade:
-                order_res = place_order(
-                    symbol=self.symbol,
-                    action=action,
-                    volume=lot,
-                    sl=sl_p,
-                    tp=tp_p,
-                    comment=f"AI_{strat_name[:8]}"
-                )
-                if order_res.get("status") == "success":
-                    self.trades_executed += 1
-                    logger.info(f"Auto Order Executed: {action} {lot} {self.symbol} Ticket #{order_res.get('order_ticket')}")
+                if action in ("BUY_STOP", "SELL_STOP", "BUY_LIMIT", "SELL_LIMIT"):
+                    order_res = place_pending_order(
+                        symbol=self.symbol,
+                        order_type=action,
+                        price=entry_p,
+                        volume=lot,
+                        sl=sl_p,
+                        tp=tp_p,
+                        comment=f"AI_{strat_name[:8]}"
+                    )
+                    if order_res.get("status") == "success":
+                        self.trades_executed += 1
+                        logger.info(f"Auto Pending Order Placed: {action} {lot} {self.symbol} at {entry_p} Ticket #{order_res.get('order_ticket')}")
+                    else:
+                        logger.warning(f"Auto Pending Order Failed: {order_res.get('message')}")
                 else:
-                    logger.warning(f"Auto Order Failed: {order_res.get('message')}")
+                    order_res = place_order(
+                        symbol=self.symbol,
+                        action=action,
+                        volume=lot,
+                        sl=sl_p,
+                        tp=tp_p,
+                        comment=f"AI_{strat_name[:8]}"
+                    )
+                    if order_res.get("status") == "success":
+                        self.trades_executed += 1
+                        logger.info(f"Auto Market Order Executed: {action} {lot} {self.symbol} Ticket #{order_res.get('order_ticket')}")
+                    else:
+                        logger.warning(f"Auto Order Failed: {order_res.get('message')}")
 
     def _evaluate_strategy(self, df) -> Optional[Dict[str, Any]]:
         """Evaluate strategy and return signal dictionary if triggered."""
@@ -287,6 +303,43 @@ class AutonomousTradingBot:
                             "tp": tp,
                             "strategy": "SMC_BEARISH_FVG",
                             "reason": f"Bearish BOS confirmed. Price retested unmitigated Bearish FVG [{fvg['bottom']} - {fvg['top']}]."
+                        }
+
+        # 2. Breakout Strategy (BUY_STOP above Swing High / SELL_STOP below Swing Low)
+        if "breakout" in self.strategy.lower() and swings:
+            recent_highs = [s for s in swings if s['type'] == 'HIGH']
+            recent_lows = [s for s in swings if s['type'] == 'LOW']
+
+            if bias == "BULLISH" and recent_highs:
+                target_high = recent_highs[-1]['price']
+                if target_high > close_p:
+                    sl = round(recent_lows[-1]['price'] if recent_lows else close_p * 0.995, 5)
+                    sl_dist = abs(target_high - sl)
+                    if sl_dist > 0:
+                        tp = round(target_high + (sl_dist * self.rr_ratio), 5)
+                        return {
+                            "action": "BUY_STOP",
+                            "entry_price": target_high,
+                            "sl": sl,
+                            "tp": tp,
+                            "strategy": "BREAKOUT_BUY_STOP",
+                            "reason": f"Bullish structure. Setting BUY_STOP at Swing High ({target_high}) for breakout continuation."
+                        }
+
+            elif bias == "BEARISH" and recent_lows:
+                target_low = recent_lows[-1]['price']
+                if target_low < close_p:
+                    sl = round(recent_highs[-1]['price'] if recent_highs else close_p * 1.005, 5)
+                    sl_dist = abs(sl - target_low)
+                    if sl_dist > 0:
+                        tp = round(target_low - (sl_dist * self.rr_ratio), 5)
+                        return {
+                            "action": "SELL_STOP",
+                            "entry_price": target_low,
+                            "sl": sl,
+                            "tp": tp,
+                            "strategy": "BREAKOUT_SELL_STOP",
+                            "reason": f"Bearish structure. Setting SELL_STOP at Swing Low ({target_low}) for breakdown continuation."
                         }
 
         return None
