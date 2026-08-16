@@ -265,29 +265,60 @@ sequenceDiagram
 
 ---
 
-## 🚀 Installation & Setup
+## 🚀 Installation & Quickstart Guide
 
-### Prerequisites
+### ⚡ 5-Minute Quickstart (Windows PowerShell)
 
-- **Windows 10 / 11** or **Windows Server**
-- **Python 3.10+** (64-bit recommended)
-- **MetaTrader 5 Client Terminal** installed and logged into an active broker account.
-- In MT5 Terminal: Navigate to `Tools` > `Options` > `Expert Advisors` > Check **"Allow Algo Trading"**.
-
-### Installation from Source
-
-```bash
-# Clone the repository
+```powershell
+# 1. Clone the repository
 git clone https://github.com/JonusNattapong/popmely.git
 cd popmely
 
-# Create and activate a virtual environment
+# 2. Create and activate virtual environment
 python -m venv .venv
 .venv\Scripts\activate
 
-# Install package in editable mode with dependencies
+# 3. Install dependencies and package
 pip install -e .
+
+# 4. Copy environment configuration
+Copy-Item .env.example .env
+
+# 5. Verify installation
+python -c "import popmely; print(f'🎉 popmely v{popmely.__version__} is ready!')"
 ```
+
+---
+
+### 🖥️ Step 1: MetaTrader 5 Terminal Configuration
+
+1. Open your **MetaTrader 5** terminal.
+2. Log into your Demo or Live trading account.
+3. Enable Automated Trading:
+   - Go to top menu: **`Tools`** > **`Options`** (or press `Ctrl + O`).
+   - Select the **`Expert Advisors`** tab.
+   - ✅ Check **"Allow Algo Trading"**.
+   - ✅ Check **"Allow WebRequest for listed URL"** (if using Webhooks).
+   - Click **OK**.
+
+---
+
+### 📱 Step 2: Telegram Push Notification Setup (Optional)
+
+To receive real-time signal alerts and credit score warnings:
+
+1. Open Telegram and search for **`@BotFather`**.
+2. Send `/newbot` and follow the prompts to create your bot $\rightarrow$ copy the **`TELEGRAM_BOT_TOKEN`**.
+3. Search for **`@userinfobot`** $\rightarrow$ start it to get your personal **`TELEGRAM_CHAT_ID`**.
+4. Edit your `.env` file:
+   ```env
+   TELEGRAM_BOT_TOKEN=123456789:ABCdefGhIJKlmNoPQRstuvWxyz
+   TELEGRAM_CHAT_ID=987654321
+   ```
+5. Test your alert:
+   ```bash
+   python -c "from popmely.agent.notifier import notifier; notifier.send_alert('🚀 popmely alert is working!')"
+   ```
 
 ---
 
