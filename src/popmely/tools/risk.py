@@ -1,10 +1,10 @@
 from typing import Dict, Any, Optional
 import MetaTrader5 as mt5
-from utils.mt5_connection import MT5ConnectionManager
-from config import config
+from popmely.utils.mt5_connection import MT5ConnectionManager
+from popmely.config import config
 
 def calculate_lot_size(
-    symbol: str,
+    symbol: str = "XAUUSD",
     stop_loss_points: float = 0.0,
     risk_amount_usd: Optional[float] = None,
     risk_percent: Optional[float] = None,
@@ -29,7 +29,6 @@ def calculate_lot_size(
     tick_size = info.trade_tick_size or point
     tick_value = info.trade_tick_value or 1.0
 
-    # If entry_price and stop_loss_price are provided, compute stop_loss_points
     if entry_price is not None and stop_loss_price is not None:
         distance = abs(entry_price - stop_loss_price)
         stop_loss_points = distance / point
@@ -37,24 +36,18 @@ def calculate_lot_size(
     if stop_loss_points <= 0:
         return {"status": "error", "message": "Stop loss points or distance must be greater than 0"}
 
-    # Determine risk amount in USD
     if risk_amount_usd is not None and risk_amount_usd > 0:
         target_risk_usd = risk_amount_usd
     elif risk_percent is not None and risk_percent > 0:
         target_risk_usd = equity * (risk_percent / 100.0)
     else:
-        target_risk_usd = equity * 0.01  # Default to 1% risk
+        target_risk_usd = equity * 0.01
 
-    # Loss per 1.0 lot for the specified SL distance
-    # Price difference / tick_size * tick_value
     loss_per_lot = (stop_loss_points * point / tick_size) * tick_value
-
     if loss_per_lot <= 0:
         return {"status": "error", "message": "Unable to calculate loss per lot for this symbol"}
 
     raw_lot = target_risk_usd / loss_per_lot
-
-    # Round to volume step
     step = info.volume_step or 0.01
     rounded_lot = round(raw_lot / step) * step
     rounded_lot = max(info.volume_min, min(rounded_lot, info.volume_max, config.MAX_LOT_SIZE))
@@ -62,7 +55,6 @@ def calculate_lot_size(
 
     actual_risk_usd = rounded_lot * loss_per_lot
 
-    # Calculate Take Profit / Reward if TP price is given
     rr_ratio = None
     est_profit_usd = None
     if entry_price is not None and take_profit_price is not None:

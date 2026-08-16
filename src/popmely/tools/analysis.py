@@ -2,8 +2,8 @@ from typing import Dict, Any
 import numpy as np
 import pandas as pd
 import MetaTrader5 as mt5
-from utils.mt5_connection import MT5ConnectionManager
-from mcp_tools.market_data import TIMEFRAME_MAP
+from popmely.utils.mt5_connection import MT5ConnectionManager
+from popmely.tools.market_data import TIMEFRAME_MAP
 
 def calculate_rsi(series: pd.Series, period: int = 14) -> pd.Series:
     delta = series.diff()
@@ -23,7 +23,7 @@ def calculate_atr(df: pd.DataFrame, period: int = 14) -> pd.Series:
     tr = pd.concat([tr1, tr2, tr3], axis=1).max(axis=1)
     return tr.rolling(window=period).mean()
 
-def analyze_technical(symbol: str, timeframe: str = "M15", count: int = 100) -> Dict[str, Any]:
+def analyze_technical(symbol: str = "XAUUSD", timeframe: str = "M15", count: int = 100) -> Dict[str, Any]:
     """Perform automated technical analysis on a symbol. Calculates EMA (20/50/200), RSI (14), MACD, ATR, Bollinger Bands, and Key Levels."""
     if not MT5ConnectionManager.ensure_connected():
         return {"status": "error", "message": "MT5 not connected"}

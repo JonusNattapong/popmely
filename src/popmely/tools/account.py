@@ -1,7 +1,7 @@
 from typing import Dict, Any
 import MetaTrader5 as mt5
-from utils.mt5_connection import MT5ConnectionManager
-from utils.formatters import format_account_info
+from popmely.utils.mt5_connection import MT5ConnectionManager
+from popmely.utils.formatters import format_account_info
 
 def get_account_info() -> Dict[str, Any]:
     """Retrieve detailed information about the current MT5 trading account (Balance, Equity, Margin, Leverage)."""

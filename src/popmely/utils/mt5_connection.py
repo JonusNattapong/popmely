@@ -1,9 +1,10 @@
+import sys
 import logging
 import MetaTrader5 as mt5
-from typing import Optional, Dict, Any
-from config import config
+from typing import Dict, Any
+from popmely.config import config
 
-logger = logging.getLogger("mt5_mcp")
+logger = logging.getLogger("popmely.mt5_connection")
 
 class MT5ConnectionManager:
     """Manages the lifecycle of the MetaTrader 5 connection."""

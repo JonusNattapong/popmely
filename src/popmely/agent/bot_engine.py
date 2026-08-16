@@ -4,16 +4,12 @@ import logging
 from datetime import datetime
 from typing import Dict, Any, Optional
 import MetaTrader5 as mt5
-from utils.mt5_connection import MT5ConnectionManager
-from mcp_tools.market_data import TIMEFRAME_MAP
-from mcp_tools.smc_analyzer import find_swings, detect_market_structure, detect_fvgs
-from mcp_tools.risk_manager import calculate_lot_size
-from mcp_tools.trading import place_order
-from agent.position_manager import PositionManager
-from agent.notifier import notifier
-from config import config
+from popmely.utils.mt5_connection import MT5ConnectionManager
+from popmely.agent.position_manager import PositionManager
+from popmely.agent.notifier import notifier
+from popmely.config import config
 
-logger = logging.getLogger("mt5_bot_engine")
+logger = logging.getLogger("popmely.bot_engine")
 
 class AutonomousTradingBot:
     """Autonomous AI Trading Agent Engine with strategy evaluation, order execution, and position management."""
@@ -135,7 +131,6 @@ class AutonomousTradingBot:
             except Exception as e:
                 logger.error(f"Error in bot execution loop: {e}", exc_info=True)
 
-            # Sleep interval with short checks
             for _ in range(self.scan_interval):
                 if not self._running:
                     break
@@ -156,13 +151,16 @@ class AutonomousTradingBot:
             return
 
         # 3. Fetch recent candles
+        from popmely.tools.market_data import TIMEFRAME_MAP
+        from popmely.tools.risk import calculate_lot_size
+        from popmely.tools.trading import place_order
+        import pandas as pd
+
         tf = TIMEFRAME_MAP.get(self.timeframe.upper(), mt5.TIMEFRAME_M15)
         rates = mt5.copy_rates_from_pos(self.symbol, tf, 0, 80)
         if rates is None or len(rates) < 40:
             return
 
-        # Check for new candle
-        import pandas as pd
         df = pd.DataFrame(rates)
         df['time'] = pd.to_datetime(df['time'], unit='s')
         latest_candle_time = df['time'].iloc[-1]
@@ -221,6 +219,8 @@ class AutonomousTradingBot:
 
     def _evaluate_strategy(self, df) -> Optional[Dict[str, Any]]:
         """Evaluate strategy and return signal dictionary if triggered."""
+        from popmely.tools.smc import find_swings, detect_market_structure, detect_fvgs
+        
         swings = find_swings(df, window=2)
         structure = detect_market_structure(df, swings)
         fvgs = detect_fvgs(df)

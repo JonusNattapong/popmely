@@ -2,16 +2,17 @@ import os
 import logging
 import requests
 from typing import Optional, Dict, Any
+from popmely.config import config
 
-logger = logging.getLogger("mt5_notifier")
+logger = logging.getLogger("popmely.notifier")
 
 class AlertNotifier:
     """Manages multi-channel notifications (Telegram, Discord/Webhooks, Console)."""
 
     def __init__(self, telegram_token: Optional[str] = None, telegram_chat_id: Optional[str] = None, webhook_url: Optional[str] = None):
-        self.telegram_token = telegram_token or os.getenv("TELEGRAM_BOT_TOKEN", "")
-        self.telegram_chat_id = telegram_chat_id or os.getenv("TELEGRAM_CHAT_ID", "")
-        self.webhook_url = webhook_url or os.getenv("WEBHOOK_URL", "")
+        self.telegram_token = telegram_token or config.TELEGRAM_BOT_TOKEN
+        self.telegram_chat_id = telegram_chat_id or config.TELEGRAM_CHAT_ID
+        self.webhook_url = webhook_url or config.WEBHOOK_URL
 
     def send_telegram(self, message: str, parse_mode: str = "HTML") -> bool:
         """Send message via Telegram Bot API."""

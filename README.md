@@ -1,91 +1,85 @@
-# 📈 popmely - MT5 Trading MCP Server
+# 📈 popmely - MetaTrader 5 (MT5) Model Context Protocol (MCP) Server
 
-A high-performance **Model Context Protocol (MCP) Server** that bridges **MetaTrader 5 (MT5)** with AI models (Claude, Antigravity, Cursor, OpenAI Agents). It enables AI to monitor real-time market data, perform automated technical analysis, calculate risk-adjusted lot sizes, and execute trades directly via natural language chat.
+[![Version](https://img.shields.io/badge/version-3.1.0-blue.svg)](https://github.com/JonusNattapong/popmely)
+[![Python](https://img.shields.io/badge/python-3.10%2B-brightgreen.svg)](https://www.python.org/)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![MCP](https://img.shields.io/badge/MCP-Standard%20Server-purple.svg)](https://modelcontextprotocol.io/)
 
----
-
-## 🌟 Key Features & Tools
-
-### 1. 💼 Account & Terminal
-* `mt5_account_info`: Retrieve Balance, Equity, Free Margin, Leverage, Profit.
-* `mt5_terminal_status`: Check MT5 connection and whether Algo Trading is enabled.
-
-### 2. 📊 Market Data & Quotes
-* `mt5_get_quote`: Live Bid/Ask/Spread for `XAUUSD`, Forex pairs, or Crypto.
-* `mt5_get_candles`: Historical OHLCV bars for M1, M5, M15, H1, H4, D1.
-* `mt5_search_symbols`: Search matching broker symbols (e.g. `XAUUSD`, `GOLD`).
-* `mt5_get_symbol_info`: Digits, Point, Contract Size, Tick Value, Min/Max Lot.
-
-### 3. 📈 Automated Technical Analysis
-* `mt5_analyze_technical`: Calculates EMA (20/50/200), RSI (14), MACD, ATR (14), Bollinger Bands, and Key Support/Resistance levels automatically.
-
-### 4. 🧠 Smart Money Concepts (SMC) Analyzer (v2)
-* `mt5_analyze_smc`: Advanced institutional market structure analysis:
-  * **Break of Structure (BOS)** & **Change of Character (CHoCH)**
-  * **Unmitigated Order Blocks (OB)**
-  * **Fair Value Gaps (FVG / Imbalances)**
-  * **Liquidity Pools (Equal Highs / Equal Lows)**
-  * **Premium vs Discount Zones & OTE (Optimal Trade Entry 61.8%-78.6%)**
-
-### 5. 🔬 Backtest Engine (v2)
-* `mt5_run_backtest`: Fast bar-by-bar historical simulation:
-  * Supported Strategies: `smc` (BOS/FVG entries) & `ema_rsi` (Trend Pullback)
-  * Computes: Win Rate (%), Total Trades, Net Profit ($ / %), Profit Factor, Max Drawdown ($ / %), and detailed recent Trade Logs.
-
-### 6. 🤖 Autonomous AI Strategy Agent & Notifier (v3)
-* `mt5_agent_start`: Launch autonomous background worker. Supports:
-  * **Auto-Trade Mode** (Direct execution) or **Signal-Only Mode** (Alerts)
-  * **Auto Breakeven** & **Trailing Stop**
-  * Multi-channel alerts (**Telegram Bot API**, **Discord/Webhooks**)
-* `mt5_agent_stop`: Gracefully stop background agent.
-* `mt5_agent_status`: Real-time monitoring of agent uptime, scan counts, and active trades.
-* `mt5_send_test_alert`: Test Telegram / Webhook notifications.
-
-### 7. 🧮 Risk Management & Lot Sizing
-* `mt5_calculate_lot_size`: Calculates optimal Lot Size according to risk in USD or % of equity, Stop Loss distance, and computes Risk/Reward ratio.
-
-### 8. ⚡ Trading & Position Management
-* `mt5_place_order`: Execute Market BUY / SELL orders with Stop Loss, Take Profit, and Slippage controls.
-* `mt5_place_pending_order`: Place Buy Limit / Sell Limit / Buy Stop / Sell Stop orders.
-* `mt5_get_positions`: View all open positions and floating PnL.
-* `mt5_modify_position`: Modify SL / TP for open positions (Trailing SL / Breakeven).
-* `mt5_close_position`: Close a single position or execute Partial Close.
-* `mt5_close_all_positions`: Emergency close all open positions.
-* `mt5_get_pending_orders`: View active pending orders.
-* `mt5_cancel_pending_order`: Cancel pending orders.
-* `mt5_get_trade_history`: View closed deals and realized PnL history.
+A high-performance, production-ready **Model Context Protocol (MCP) Server** that bridges **MetaTrader 5 (MT5)** with AI models (Claude, Antigravity, Cursor, OpenAI Agents). It empowers AI to monitor live market data, execute Smart Money Concepts (SMC) analysis, run bar-by-bar backtests, manage risk, and run an autonomous trading bot with Telegram alerts.
 
 ---
 
-## 🚀 Setup & Configuration
+## 🌟 Standard MCP Capabilities
+
+### 🛠️ 1. Tools (19 Interactive Tools)
+* **💼 Account & Terminal:** `mt5_account_info`, `mt5_terminal_status`
+* **📊 Market Data:** `mt5_get_quote`, `mt5_get_candles`, `mt5_search_symbols`, `mt5_get_symbol_info`
+* **📈 Technical Analysis:** `mt5_analyze_technical` (EMA 20/50/200, RSI, MACD, ATR, Bollinger Bands)
+* **🧠 Smart Money Concepts (SMC):** `mt5_analyze_smc` (BOS, CHoCH, Order Blocks, FVGs, Liquidity, OTE 61.8%-78.6%)
+* **🔬 Backtest Engine:** `mt5_run_backtest` (Win Rate %, Max DD %, Profit Factor, Trade logs)
+* **🤖 Autonomous AI Agent:** `mt5_agent_start`, `mt5_agent_stop`, `mt5_agent_status`, `mt5_send_test_alert`
+* **🧮 Risk Management:** `mt5_calculate_lot_size` (Lot size per $ or % risk, R:R ratio)
+* **⚡ Order Execution:** `mt5_place_order`, `mt5_place_pending_order`, `mt5_get_positions`, `mt5_modify_position`, `mt5_close_position`, `mt5_close_all_positions`, `mt5_get_trade_history`
+
+### 📚 2. Resources (Read-only Context)
+* `mt5://account/status`: Live Account Balance, Equity, and Margin
+* `mt5://positions/active`: Live Open Positions and floating PnL
+* `mt5://config/limits`: Safety limits and configuration
+
+### 💡 3. Prompts (Pre-built AI Templates)
+* `daily_market_briefing`: Comprehensive morning market overview and health check
+* `smc_trade_setup`: Full SMC market structure analysis & risk-managed trade plan
+
+---
+
+## 🚀 Installation & Setup
 
 ### Prerequisites
-1. Windows OS
-2. [MetaTrader 5](https://www.metatrader5.com/) installed and running (with Algo Trading enabled in MT5: `Tools` > `Options` > `Expert Advisors` > Check `Allow Algo Trading`).
+1. **Windows OS**
+2. [MetaTrader 5](https://www.metatrader5.com/) installed and logged into an account (Demo or Live). Enable Algo Trading: `Tools` > `Options` > `Expert Advisors` > Check `Allow Algo Trading`.
 3. Python 3.10+
 
-### Installation
+### Option A: Install from source (Editable mode)
 ```bash
-pip install -r requirements.txt
+git clone https://github.com/JonusNattapong/popmely.git
+cd popmely
+pip install -e .
 ```
 
-### Quick Diagnostic Test
-Run the self-test to verify MT5 terminal connection and indicators:
+### Option B: Run via `uvx` (or `pipx`)
 ```bash
-python test_mt5.py
+uvx --from git+https://github.com/JonusNattapong/popmely.git popmely
 ```
 
 ---
 
 ## ⚙️ MCP Client Configuration
 
-Add this server to your MCP client config (e.g., Claude Desktop, Antigravity, Cursor, etc.):
+### Claude Desktop / Antigravity IDE (`claude_desktop_config.json` or `mcp.json`)
 
-### `mcp.json` / Claude Desktop Config (`claude_desktop_config.json`)
+#### If installed via pip (`popmely` command or module):
 ```json
 {
   "mcpServers": {
-    "mt5-trading": {
+    "popmely": {
+      "command": "python",
+      "args": [
+        "-m",
+        "popmely"
+      ],
+      "env": {
+        "PYTHONIOENCODING": "utf-8"
+      }
+    }
+  }
+}
+```
+
+#### If referencing directory directly:
+```json
+{
+  "mcpServers": {
+    "popmely": {
       "command": "python",
       "args": [
         "d:\\Projects\\Github\\popmely\\server.py"
@@ -100,10 +94,14 @@ Add this server to your MCP client config (e.g., Claude Desktop, Antigravity, Cu
 
 ---
 
-## 💬 Example AI Prompts
+## 🧪 Testing
 
-* *"เช็กราคาทอง XAUUSD ตอนนี้ พร้อมวิเคราะห์แนวโน้ม M15"*
-* *"ช่วยคำนวณ Lot Size ถ้ายอมเสี่ยงขาดทุน 1% ของพอร์ต โดยตั้ง SL ห่าง 400 จุด"*
-* *"เปิด Buy XAUUSD 0.05 lot โดยตั้ง SL ที่ 2640 และ TP ที่ 2660"*
-* *"ดูออเดอร์ที่เปิดค้างอยู่ตอนนี้ มีกำไร/ขาดทุนเท่าไหร่บ้าง"*
-* *"ขยับ Stop Loss ของไม้ทอง ticket #12345 ไปที่ราคาหน้าทุน (Breakeven)"*
+Run the full automated test suite:
+```bash
+python -m unittest discover -s tests
+```
+
+---
+
+## 📄 License
+MIT License. Created by [JonusNattapong](https://github.com/JonusNattapong).

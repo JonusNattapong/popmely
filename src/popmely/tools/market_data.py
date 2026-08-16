@@ -2,8 +2,8 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime
 import pandas as pd
 import MetaTrader5 as mt5
-from utils.mt5_connection import MT5ConnectionManager
-from utils.formatters import format_tick
+from popmely.utils.mt5_connection import MT5ConnectionManager
+from popmely.utils.formatters import format_tick
 
 TIMEFRAME_MAP = {
     "M1": mt5.TIMEFRAME_M1,
@@ -22,7 +22,6 @@ def get_quote(symbol: str) -> Dict[str, Any]:
     if not MT5ConnectionManager.ensure_connected():
         return {"status": "error", "message": "MT5 not connected"}
 
-    # Ensure symbol is selected in Market Watch
     if not mt5.symbol_select(symbol, True):
         return {"status": "error", "message": f"Failed to select symbol '{symbol}'. Check if symbol name is correct."}
 
@@ -88,7 +87,7 @@ def search_symbols(query: str = "XAU") -> Dict[str, Any]:
     return {
         "status": "success",
         "count": len(matches),
-        "data": matches[:50]  # Limit to 50 results
+        "data": matches[:50]
     }
 
 def get_candles(symbol: str, timeframe: str = "M15", count: int = 50) -> Dict[str, Any]:

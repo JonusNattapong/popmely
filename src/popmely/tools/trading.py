@@ -1,13 +1,13 @@
 from typing import Dict, Any, List, Optional
 from datetime import datetime, timedelta
 import MetaTrader5 as mt5
-from utils.mt5_connection import MT5ConnectionManager
-from utils.formatters import format_position, format_order, format_deal
-from config import config
+from popmely.utils.mt5_connection import MT5ConnectionManager
+from popmely.utils.formatters import format_position, format_order, format_deal
+from popmely.config import config
 
 def place_order(
     symbol: str,
-    action: str,  # 'BUY' or 'SELL'
+    action: str,
     volume: float,
     sl: Optional[float] = None,
     tp: Optional[float] = None,
@@ -54,10 +54,8 @@ def place_order(
         "type_filling": mt5.ORDER_FILLING_IOC,
     }
 
-    # First check order with check_order
     check = mt5.order_check(request)
     if check is None or check.retcode != mt5.TRADE_RETCODE_DONE:
-        # Try with ORDER_FILLING_RETURN or FOK if IOC not supported
         request["type_filling"] = mt5.ORDER_FILLING_RETURN
         check = mt5.order_check(request)
         if check is None or check.retcode != mt5.TRADE_RETCODE_DONE:
@@ -88,7 +86,7 @@ def place_order(
 
 def place_pending_order(
     symbol: str,
-    order_type: str,  # 'BUY_LIMIT', 'SELL_LIMIT', 'BUY_STOP', 'SELL_STOP'
+    order_type: str,
     price: float,
     volume: float,
     sl: Optional[float] = None,
@@ -159,11 +157,7 @@ def get_positions(symbol: Optional[str] = None) -> Dict[str, Any]:
     if not MT5ConnectionManager.ensure_connected():
         return {"status": "error", "message": "MT5 not connected"}
 
-    if symbol:
-        positions = mt5.positions_get(symbol=symbol)
-    else:
-        positions = mt5.positions_get()
-
+    positions = mt5.positions_get(symbol=symbol) if symbol else mt5.positions_get()
     if positions is None:
         return {"status": "error", "message": "Failed to get positions"}
 
@@ -240,7 +234,6 @@ def close_position(ticket: int, volume: Optional[float] = None) -> Dict[str, Any
         "type_filling": mt5.ORDER_FILLING_IOC,
     }
 
-    # Fallback filling types if IOC fails
     check = mt5.order_check(request)
     if check is None or check.retcode != mt5.TRADE_RETCODE_DONE:
         request["type_filling"] = mt5.ORDER_FILLING_RETURN

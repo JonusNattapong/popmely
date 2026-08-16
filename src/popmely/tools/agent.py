@@ -1,6 +1,6 @@
 from typing import Dict, Any, Optional
-from agent.bot_engine import bot_agent
-from agent.notifier import notifier
+from popmely.agent.bot_engine import bot_agent
+from popmely.agent.notifier import notifier
 
 def agent_start(
     symbol: str = "XAUUSD",

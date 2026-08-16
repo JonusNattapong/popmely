@@ -1,11 +1,10 @@
 import logging
 from typing import Dict, Any, List
 import MetaTrader5 as mt5
-from utils.mt5_connection import MT5ConnectionManager
-from utils.formatters import format_position
-from agent.notifier import notifier
+from popmely.utils.mt5_connection import MT5ConnectionManager
+from popmely.agent.notifier import notifier
 
-logger = logging.getLogger("mt5_position_manager")
+logger = logging.getLogger("popmely.position_manager")
 
 class PositionManager:
     """Monitors open positions, manages Auto-Breakeven and Trailing Stop."""
@@ -47,7 +46,6 @@ class PositionManager:
                 # 1. Auto Breakeven check
                 if self.enable_be and ticket not in self.breakeven_tickets:
                     if profit_points >= self.be_trigger_points:
-                        # Move SL to open_price
                         if current_sl < open_price:
                             res = self._modify_sl(pos, open_price)
                             if res:
@@ -69,7 +67,6 @@ class PositionManager:
                 # 1. Auto Breakeven check
                 if self.enable_be and ticket not in self.breakeven_tickets:
                     if profit_points >= self.be_trigger_points:
-                        # Move SL to open_price
                         if current_sl == 0.0 or current_sl > open_price:
                             res = self._modify_sl(pos, open_price)
                             if res:

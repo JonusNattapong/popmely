@@ -2,8 +2,8 @@ from typing import Dict, Any, List, Optional
 import numpy as np
 import pandas as pd
 import MetaTrader5 as mt5
-from utils.mt5_connection import MT5ConnectionManager
-from mcp_tools.market_data import TIMEFRAME_MAP
+from popmely.utils.mt5_connection import MT5ConnectionManager
+from popmely.tools.market_data import TIMEFRAME_MAP
 
 def find_swings(df: pd.DataFrame, window: int = 3) -> List[Dict[str, Any]]:
     """Identify swing highs and swing lows."""
@@ -13,7 +13,6 @@ def find_swings(df: pd.DataFrame, window: int = 3) -> List[Dict[str, Any]]:
     times = df['time'].values
 
     for i in range(window, len(df) - window):
-        # Swing High
         if all(highs[i] >= highs[i - j] for j in range(1, window + 1)) and \
            all(highs[i] >= highs[i + j] for j in range(1, window + 1)):
             swings.append({
@@ -22,7 +21,6 @@ def find_swings(df: pd.DataFrame, window: int = 3) -> List[Dict[str, Any]]:
                 "price": round(float(highs[i]), 5),
                 "time": str(times[i])
             })
-        # Swing Low
         elif all(lows[i] <= lows[i - j] for j in range(1, window + 1)) and \
              all(lows[i] <= lows[i + j] for j in range(1, window + 1)):
             swings.append({
@@ -78,16 +76,13 @@ def detect_fvgs(df: pd.DataFrame) -> List[Dict[str, Any]]:
     fvgs = []
     highs = df['high'].values
     lows = df['low'].values
-    closes = df['close'].values
     times = df['time'].values
     n = len(df)
 
     for i in range(len(df) - 2):
-        # Bullish FVG: Low of candle i+2 > High of candle i
         if lows[i + 2] > highs[i]:
             gap_bottom = highs[i]
             gap_top = lows[i + 2]
-            # Check mitigation by subsequent candles
             mitigated = any(lows[k] <= gap_bottom for k in range(i + 3, n))
             partially_filled = any(lows[k] < gap_top for k in range(i + 3, n))
             fvgs.append({
@@ -99,8 +94,6 @@ def detect_fvgs(df: pd.DataFrame) -> List[Dict[str, Any]]:
                 "mitigated": bool(mitigated),
                 "partially_filled": bool(partially_filled)
             })
-
-        # Bearish FVG: High of candle i+2 < Low of candle i
         elif highs[i + 2] < lows[i]:
             gap_top = lows[i]
             gap_bottom = highs[i + 2]
@@ -129,7 +122,6 @@ def detect_order_blocks(df: pd.DataFrame) -> List[Dict[str, Any]]:
     n = len(df)
 
     for i in range(1, len(df) - 2):
-        # Bullish OB: Bearish candle (close < open) followed by a strong bullish move that breaks prior high
         if closes[i] < opens[i] and closes[i + 1] > opens[i + 1]:
             displacement = (closes[i + 1] - opens[i + 1])
             avg_body = np.mean(np.abs(closes[max(0, i-5):i] - opens[max(0, i-5):i]))
@@ -144,8 +136,6 @@ def detect_order_blocks(df: pd.DataFrame) -> List[Dict[str, Any]]:
                     "time": str(times[i]),
                     "mitigated": bool(mitigated)
                 })
-
-        # Bearish OB: Bullish candle (close > open) followed by a strong bearish move
         elif closes[i] > opens[i] and closes[i + 1] < opens[i + 1]:
             displacement = (opens[i + 1] - closes[i + 1])
             avg_body = np.mean(np.abs(closes[max(0, i-5):i] - opens[max(0, i-5):i]))
@@ -264,11 +254,9 @@ def analyze_smc(symbol: str = "XAUUSD", timeframe: str = "M15", count: int = 150
     prem_disc = calculate_premium_discount(df, swings)
     liquidity = detect_liquidity_pools(swings)
 
-    # Filter for active (unmitigated) FVGs and OBs
     unmitigated_fvgs = [f for f in fvgs if not f['mitigated']][-5:]
     unmitigated_obs = [o for o in obs if not o['mitigated']][-5:]
 
-    # SMC Trade Bias Summary
     bias = structure.get("structure", "NEUTRAL")
     trade_suggestion = "Wait for pullback to unmitigated OB/FVG"
     if bias == "BULLISH":

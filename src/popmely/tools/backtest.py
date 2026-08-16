@@ -2,9 +2,9 @@ from typing import Dict, Any, List, Optional
 import numpy as np
 import pandas as pd
 import MetaTrader5 as mt5
-from utils.mt5_connection import MT5ConnectionManager
-from mcp_tools.market_data import TIMEFRAME_MAP
-from mcp_tools.smc_analyzer import find_swings, detect_market_structure, detect_fvgs, detect_order_blocks
+from popmely.utils.mt5_connection import MT5ConnectionManager
+from popmely.tools.market_data import TIMEFRAME_MAP
+from popmely.tools.smc import find_swings, detect_market_structure, detect_fvgs
 
 def backtest_smc_strategy(df: pd.DataFrame, rr_ratio: float = 2.0) -> List[Dict[str, Any]]:
     """Simulate SMC strategy (Trade in direction of BOS/CHoCH on FVG/OB touch)."""
@@ -16,56 +16,23 @@ def backtest_smc_strategy(df: pd.DataFrame, rr_ratio: float = 2.0) -> List[Dict[
         curr_bar = df.iloc[i]
         next_bar = df.iloc[i + 1]
 
-        # Manage existing trade
         if in_trade:
-            # Check for BUY
             if trade_info['type'] == 'BUY':
                 if next_bar['low'] <= trade_info['sl']:
-                    # Hit SL
-                    trades.append({
-                        **trade_info,
-                        "exit_time": str(next_bar['time']),
-                        "exit_price": trade_info['sl'],
-                        "result": "LOSS",
-                        "pnl_rr": -1.0
-                    })
+                    trades.append({**trade_info, "exit_time": str(next_bar['time']), "exit_price": trade_info['sl'], "result": "LOSS", "pnl_rr": -1.0})
                     in_trade = False
                 elif next_bar['high'] >= trade_info['tp']:
-                    # Hit TP
-                    trades.append({
-                        **trade_info,
-                        "exit_time": str(next_bar['time']),
-                        "exit_price": trade_info['tp'],
-                        "result": "WIN",
-                        "pnl_rr": rr_ratio
-                    })
+                    trades.append({**trade_info, "exit_time": str(next_bar['time']), "exit_price": trade_info['tp'], "result": "WIN", "pnl_rr": rr_ratio})
                     in_trade = False
-
-            # Check for SELL
             elif trade_info['type'] == 'SELL':
                 if next_bar['high'] >= trade_info['sl']:
-                    # Hit SL
-                    trades.append({
-                        **trade_info,
-                        "exit_time": str(next_bar['time']),
-                        "exit_price": trade_info['sl'],
-                        "result": "LOSS",
-                        "pnl_rr": -1.0
-                    })
+                    trades.append({**trade_info, "exit_time": str(next_bar['time']), "exit_price": trade_info['sl'], "result": "LOSS", "pnl_rr": -1.0})
                     in_trade = False
                 elif next_bar['low'] <= trade_info['tp']:
-                    # Hit TP
-                    trades.append({
-                        **trade_info,
-                        "exit_time": str(next_bar['time']),
-                        "exit_price": trade_info['tp'],
-                        "result": "WIN",
-                        "pnl_rr": rr_ratio
-                    })
+                    trades.append({**trade_info, "exit_time": str(next_bar['time']), "exit_price": trade_info['tp'], "result": "WIN", "pnl_rr": rr_ratio})
                     in_trade = False
             continue
 
-        # Look for Entry Setup
         sub_df = df.iloc[max(0, i - 40):i + 1].copy().reset_index(drop=True)
         swings = find_swings(sub_df, window=2)
         structure = detect_market_structure(sub_df, swings)
@@ -74,7 +41,6 @@ def backtest_smc_strategy(df: pd.DataFrame, rr_ratio: float = 2.0) -> List[Dict[
         bias = structure.get("structure")
         close_p = curr_bar['close']
 
-        # Bullish Entry: Bullish Structure + Price touching unmitigated Bullish FVG
         if bias == "BULLISH":
             active_bull_fvgs = [f for f in fvgs if f['type'] == 'BULLISH_FVG' and not f['mitigated']]
             if active_bull_fvgs:
@@ -94,7 +60,6 @@ def backtest_smc_strategy(df: pd.DataFrame, rr_ratio: float = 2.0) -> List[Dict[
                             "strategy": "SMC_BULLISH_FVG"
                         }
 
-        # Bearish Entry: Bearish Structure + Price touching unmitigated Bearish FVG
         elif bias == "BEARISH":
             active_bear_fvgs = [f for f in fvgs if f['type'] == 'BEARISH_FVG' and not f['mitigated']]
             if active_bear_fvgs:
@@ -158,7 +123,6 @@ def backtest_ema_rsi_strategy(df: pd.DataFrame, rr_ratio: float = 2.0) -> List[D
         e50 = ema50.iloc[i]
         r = rsi.iloc[i]
 
-        # Buy: Uptrend (EMA20 > EMA50) and RSI pulled back < 40 and bounced
         if e20 > e50 and r <= 42 and c_p > e20:
             sl = float(df['low'].iloc[max(0, i-5):i].min())
             sl_dist = abs(c_p - sl)
@@ -174,7 +138,6 @@ def backtest_ema_rsi_strategy(df: pd.DataFrame, rr_ratio: float = 2.0) -> List[D
                     "strategy": "EMA_RSI_PULLBACK"
                 }
 
-        # Sell: Downtrend (EMA20 < EMA50) and RSI pulled back > 60 and rejected
         elif e20 < e50 and r >= 58 and c_p < e20:
             sl = float(df['high'].iloc[max(0, i-5):i].max())
             sl_dist = abs(sl - c_p)
@@ -195,7 +158,7 @@ def backtest_ema_rsi_strategy(df: pd.DataFrame, rr_ratio: float = 2.0) -> List[D
 def run_backtest(
     symbol: str = "XAUUSD",
     timeframe: str = "M15",
-    strategy: str = "smc",  # 'smc' or 'ema_rsi'
+    strategy: str = "smc",
     bars_count: int = 500,
     start_balance: float = 10000.0,
     risk_percent: float = 1.0,
@@ -242,7 +205,6 @@ def run_backtest(
             "trades": []
         }
 
-    # Calculate financial metrics
     balance = start_balance
     peak_balance = start_balance
     max_drawdown_usd = 0.0
@@ -265,7 +227,6 @@ def run_backtest(
             losses += 1
             total_loss += abs(pnl_usd)
 
-        # Track Drawdown
         if balance > peak_balance:
             peak_balance = balance
         dd_usd = peak_balance - balance

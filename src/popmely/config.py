@@ -23,4 +23,9 @@ class MT5Config:
     MAX_DAILY_DRAWDOWN_PERCENT: float = float(os.getenv("MAX_DAILY_DRAWDOWN_PERCENT", "5.0"))
     REQUIRE_SL: bool = os.getenv("REQUIRE_SL", "false").lower() in ("true", "1", "yes")
 
+    # Notifications
+    TELEGRAM_BOT_TOKEN: str = os.getenv("TELEGRAM_BOT_TOKEN", "")
+    TELEGRAM_CHAT_ID: str = os.getenv("TELEGRAM_CHAT_ID", "")
+    WEBHOOK_URL: str = os.getenv("WEBHOOK_URL", "")
+
 config = MT5Config()
