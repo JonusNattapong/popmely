@@ -17,7 +17,7 @@ It equips AI assistants with full-duplex control over financial markets—rangin
 1. [Key Features](#-key-features)
 2. [The Trader's Journey (Workflow)](#-the-traders-journey-workflow)
 3. [System Architecture](#-system-architecture)
-4. [MCP Interface Specification (50 Tools)](#-mcp-interface-specification)
+4. [MCP Interface Specification (54 Tools)](#-mcp-interface-specification)
 5. [Institutional & ICT Strategy Models](#-institutional--ict-strategy-models)
 6. [Trading Credit Score Engine](#-trading-credit-score-engine-v40)
 7. [Smart Money Concepts (SMC) Analyzer](#-smart-money-concepts-smc-analyzer)
@@ -127,7 +127,7 @@ graph TD
 
 ## 📋 MCP Interface Specification
 
-### 1. Tools (50 Callable Functions)
+### 1. Tools (54 Callable Functions)
 
 #### 💼 Account & Terminal
 | Tool Name | Description | Parameters |
@@ -157,6 +157,14 @@ graph TD
 | `mt5_detect_judas_swing` | **Judas Swing & Asian Sweep**: Detects London/NY open stop hunts above/below Asian Range and generates sniper reversals. | `symbol: str = "XAUUSD"`, `count: int = 120` |
 | `mt5_analyze_ifvg` | **Inversion FVG (IFVG) Scanner**: Tracks broken FVGs that have inverted roles into high-probability support/resistance. | `symbol: str = "XAUUSD"`, `timeframe: str = "M15"`, `count: int = 100` |
 | `mt5_confluence_matrix` | **Multi-Timeframe Confluence Matrix**: Computes a 0-100% Institutional Confluence Score across H4, H1, M15, and RSI. | `symbol: str = "XAUUSD"` |
+
+#### 📰 High-Impact News & Straddle Trading (New)
+| Tool Name | Description | Parameters |
+|:---|:---|:---|
+| `mt5_get_economic_calendar` | **Live Economic Calendar**: Official feeds for CPI, NFP, FOMC with Impact & Currency filters. | `currency: Optional[str]`, `impact: str = "High"`, `days: int = 7` |
+| `mt5_check_news_blackout` | **News Blackout Window**: Check if market is within High-Impact news volatility window. | `symbol: str = "XAUUSD"`, `minutes_before: int = 15`, `minutes_after: int = 15` |
+| `mt5_execute_news_straddle` | **Trade the News Spike**: Place two-sided bracket straddle order (BUY_STOP + SELL_STOP) with 1:3 R:R to catch explosive news spikes. | `symbol: str = "XAUUSD"`, `event_name: str`, `distance_points: float = 250.0`, `volume: float = 0.01`, `sl_points: float = 150.0`, `tp_points: float = 450.0` |
+| `mt5_analyze_news_volatility` | **Post-News Volatility Analyzer**: Real-time ATR spike & displacement to assess news momentum continuation. | `symbol: str = "XAUUSD"`, `timeframe: str = "M1"`, `count: int = 30` |
 
 #### 🔬 Backtesting Engine
 | Tool Name | Description | Parameters |

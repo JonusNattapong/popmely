@@ -20,6 +20,7 @@ import popmely.tools.credit_score as score_tool
 import popmely.tools.institutional as inst_tool
 import popmely.tools.journal as journal_tool
 import popmely.tools.db_tools as db_tool
+import popmely.tools.news as news_tool
 
 # Setup standard logging to stderr
 logging.basicConfig(
@@ -582,7 +583,57 @@ def mt5_db_stats() -> dict:
     return db_tool.db_stats()
 
 # =====================================================================
-# 10. MAIN ENTRYPOINT
+# 10. HIGH-IMPACT ECONOMIC NEWS & NEWS TRADING TOOLS
+# =====================================================================
+
+@mcp.tool()
+def mt5_get_economic_calendar(
+    currency: Optional[str] = None,
+    impact: str = "High",
+    days: int = 7
+) -> dict:
+    """Fetch live economic calendar events with filters for Impact (High, Medium, Low, All) and Currency (USD, EUR, GBP, JPY, etc.) directly from official feeds."""
+    return news_tool.get_economic_calendar(currency=currency, impact=impact, days=days)
+
+@mcp.tool()
+def mt5_check_news_blackout(
+    symbol: str = "XAUUSD",
+    minutes_before: int = 15,
+    minutes_after: int = 15
+) -> dict:
+    """Check if the symbol's currencies are currently inside a High-Impact news volatility window to prevent bad slippage or trigger News Straddles."""
+    return news_tool.check_news_blackout(symbol=symbol, minutes_before=minutes_before, minutes_after=minutes_after)
+
+@mcp.tool()
+def mt5_execute_news_straddle(
+    symbol: str = "XAUUSD",
+    event_name: str = "High_Impact_News",
+    distance_points: float = 250.0,
+    volume: float = 0.01,
+    sl_points: float = 150.0,
+    tp_points: float = 450.0
+) -> dict:
+    """Trade the News: Places a two-sided bracket straddle order (BUY_STOP above + SELL_STOP below) right before high-impact news to catch explosive breakout spikes with tight SL and 1:3 R:R TP."""
+    return news_tool.execute_news_straddle_trade(
+        symbol=symbol,
+        event_name=event_name,
+        distance_points=distance_points,
+        volume=volume,
+        sl_points=sl_points,
+        tp_points=tp_points
+    )
+
+@mcp.tool()
+def mt5_analyze_news_volatility(
+    symbol: str = "XAUUSD",
+    timeframe: str = "M1",
+    count: int = 30
+) -> dict:
+    """Post-News Volatility Analyzer: Measures real-time ATR expansion and price displacement to assess news momentum continuation vs exhaustion."""
+    return news_tool.analyze_news_volatility(symbol=symbol, timeframe=timeframe, count=count)
+
+# =====================================================================
+# 11. MAIN ENTRYPOINT
 # =====================================================================
 
 def main():
