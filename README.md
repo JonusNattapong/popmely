@@ -441,11 +441,50 @@ Add popmely to your Claude Desktop configuration located at `%APPDATA%\Claude\cl
 ### Direct CLI Invocation
 
 ```bash
-# Standard stdio mode
+# Standard stdio MCP mode
 python -m popmely
 
 # FastMCP SSE Transport mode
 python -m popmely --transport sse --host 127.0.0.1 --port 8000
+```
+
+---
+
+## 📺 Live Streaming Trading Dashboard & Console
+
+Run the interactive live terminal console to monitor real-time prices, SMC structure, Credit Score meter, and bot executions on your screen:
+
+```bash
+# Monitor XAUUSD in real-time (auto-refreshes every 2 seconds)
+python -m popmely.live --symbol XAUUSD --interval 2
+
+# Monitor BTCUSD with autonomous auto-trading execution enabled
+python -m popmely.live --symbol BTCUSD --interval 1 --auto-trade
+```
+
+```
+==================================================================================
+ 👑 POPMELY LIVE STREAMING TRADING TERMINAL v5.0.0 | 2026-08-16 17:15:00
+ 🔌 MT5 Account: #110491916 (MetaQuotes-Demo) | Terminal: CONNECTED
+==================================================================================
+ 💰 Balance: $100,000.00    | Equity: $100,000.00    | Floating PnL: $0.00       
+ 🔒 Margin Used: $0.00      | Free Margin: $100,000.00 | Margin Level: 0.0%
+----------------------------------------------------------------------------------
+ 🛡️  Trading Credit Score : [████████████████████] 100.0% 🟢 GREEN (100% Lot)
+    Streak Counters      : Win Streak: 2 | Loss Streak: 0 | SQLite: PERSISTENT
+----------------------------------------------------------------------------------
+ 📊 Ticker (XAUUSD)       : Bid: 4376.00 | Ask: 4376.20 | Spread: 20 pts
+ 🎛️  Confluence Matrix   : STRONG_BUY   (Bullish: 85% | Bearish: 15%)
+ 📰 Economic News Status : 🟢 CLEAR (No High-Impact News)
+----------------------------------------------------------------------------------
+ 📈 Active Positions (1 Open):
+    #1234567   XAUUSD   BUY    0.10     4375.50      4376.00      +$50.00   
+----------------------------------------------------------------------------------
+ 📡 Live Stream Event Feed:
+    [17:15:00] 🚀 Live Streaming Terminal Initialized.
+    [17:15:02] 🎯 Institutional Confluence 85% detected on XAUUSD M15.
+    [17:15:04] ⚡ Order executed: BUY 0.10 XAUUSD @ 4375.50 (Ticket #1234567).
+==================================================================================
 ```
 
 ---
