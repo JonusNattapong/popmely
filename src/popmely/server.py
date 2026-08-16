@@ -24,6 +24,7 @@ import popmely.tools.news as news_tool
 import popmely.tools.chart as chart_tool
 import popmely.tools.recall as recall_tool
 import popmely.tools.config_tools as cfg_tool
+import popmely.tools.polymarket as poly_tool
 
 # Setup standard logging to stderr
 logging.basicConfig(
@@ -799,7 +800,49 @@ def mt5_set_config(
     )
 
 # =====================================================================
-# 13. MAIN ENTRYPOINT
+# 13. POLYMARKET PREDICTION MARKET TOOLS
+# =====================================================================
+
+@mcp.tool()
+def poly_get_markets(
+    query: Optional[str] = None,
+    limit: int = 10,
+    active: bool = True
+) -> dict:
+    """Search and discover Polymarket event prediction markets, odds, volume, and YES/NO outcome tokens."""
+    return poly_tool.poly_get_markets(query=query, limit=limit, active=active)
+
+@mcp.tool()
+def poly_get_orderbook(token_id: str) -> dict:
+    """Retrieve live Level 2 bid/ask orderbook for a specific Polymarket outcome token."""
+    return poly_tool.poly_get_orderbook(token_id=token_id)
+
+@mcp.tool()
+def poly_get_portfolio(user_address: Optional[str] = None) -> dict:
+    """Query active open positions and portfolio value on Polymarket for a given wallet address."""
+    return poly_tool.poly_get_portfolio(user_address=user_address)
+
+@mcp.tool()
+def poly_get_trade_history(
+    user_address: Optional[str] = None,
+    limit: int = 20
+) -> dict:
+    """Query on-chain closed trade history and executed fills on Polymarket."""
+    return poly_tool.poly_get_trade_history(user_address=user_address, limit=limit)
+
+@mcp.tool()
+def poly_place_order(
+    token_id: str,
+    side: str = "BUY",
+    price: float = 0.50,
+    size_usd: float = 10.0,
+    paper: bool = True
+) -> dict:
+    """Place a limit order on Polymarket. Supports Paper Trading simulation (default) or Live Mainnet execution."""
+    return poly_tool.poly_place_order(token_id=token_id, side=side, price=price, size_usd=size_usd, paper=paper)
+
+# =====================================================================
+# 14. MAIN ENTRYPOINT
 # =====================================================================
 
 def main():
