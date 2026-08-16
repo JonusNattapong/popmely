@@ -104,15 +104,23 @@ def mt5_generate_candlestick_chart(
     count: int = 80,
     overlay_smc: bool = True,
     overlay_ema: bool = True,
+    entry_price: Optional[float] = None,
+    sl_price: Optional[float] = None,
+    tp_price: Optional[float] = None,
+    trade_action: Optional[str] = None,
     save_path: Optional[str] = None
 ) -> dict:
-    """Generate and save high-resolution dark-themed candlestick chart image (.png) with Fair Value Gaps (FVG), Order Blocks (OB), and EMAs overlaid."""
+    """Generate and save high-resolution dark-themed candlestick chart image (.png) with Fair Value Gaps (FVG), Order Blocks (OB), EMAs, and Entry / SL / TP trade plan lines overlaid."""
     return chart_tool.generate_candlestick_chart(
         symbol=symbol,
         timeframe=timeframe,
         count=count,
         overlay_smc=overlay_smc,
         overlay_ema=overlay_ema,
+        entry_price=entry_price,
+        sl_price=sl_price,
+        tp_price=tp_price,
+        trade_action=trade_action,
         save_path=save_path
     )
 
