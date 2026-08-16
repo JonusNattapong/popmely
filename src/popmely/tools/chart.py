@@ -114,9 +114,10 @@ def generate_candlestick_chart(
         tight_layout=True
     )
 
-    # Overlay SMC Annotations (FVG and OB highlight boxes)
+    # Overlay SMC Annotations (FVG and OB highlight boxes starting from their formation bar)
     main_ax = axlist[0]
     smc_annotations_count = 0
+    import matplotlib.patches as patches
 
     if overlay_smc:
         raw_df = pd.DataFrame(rates)
@@ -124,49 +125,96 @@ def generate_candlestick_chart(
         fvgs = detect_fvgs(raw_df)
         obs = detect_order_blocks(raw_df)
 
-        # Plot recent unmitigated FVGs
-        for f in fvgs[-6:]:
+        # Plot recent unmitigated FVGs with bounded width
+        for f in fvgs[-5:]:
             if not f['mitigated']:
                 f_color = '#00e676' if f['type'] == 'BULLISH_FVG' else '#ff1744'
-                main_ax.axhspan(f['bottom'], f['top'], color=f_color, alpha=0.20, label=f['type'])
+                start_x = max(0, f.get('bar_index', len(df) - 25))
+                width = len(df) - start_x + 3
+                rect_fvg = patches.Rectangle(
+                    (start_x, f['bottom']), width, f['top'] - f['bottom'],
+                    facecolor=f_color, alpha=0.18, edgecolor=f_color, linewidth=1, linestyle=':'
+                )
+                main_ax.add_patch(rect_fvg)
+                main_ax.text(start_x + 0.5, (f['top'] + f['bottom']) / 2, f"  {f['type'].replace('_', ' ')}", color=f_color, fontsize=7.5, verticalalignment='center')
                 smc_annotations_count += 1
 
-        # Plot recent Order Blocks
-        for ob in obs[-4:]:
+        # Plot recent Order Blocks with bounded width
+        for ob in obs[-3:]:
             if not ob['mitigated']:
                 ob_color = '#00b0ff' if ob['type'] == 'BULLISH_OB' else '#ff9100'
-                main_ax.axhspan(ob['bottom'], ob['top'], color=ob_color, alpha=0.16, linestyle='--')
+                start_x = max(0, ob.get('bar_index', len(df) - 30))
+                width = len(df) - start_x + 3
+                rect_ob = patches.Rectangle(
+                    (start_x, ob['bottom']), width, ob['top'] - ob['bottom'],
+                    facecolor=ob_color, alpha=0.18, edgecolor=ob_color, linewidth=1, linestyle='--'
+                )
+                main_ax.add_patch(rect_ob)
+                main_ax.text(start_x + 0.5, (ob['top'] + ob['bottom']) / 2, f"  +{ob['type']}", color=ob_color, fontsize=8, verticalalignment='center', fontweight='bold')
                 smc_annotations_count += 1
 
-    # Overlay Entry, Stop Loss, and Take Profit lines
+    # Overlay TradingView-style Long/Short Position Box Widget (Bounded SL/TP Box)
     trade_plan_drawn = False
     rr_text = None
     if entry_price is not None and entry_price > 0:
-        main_ax.axhline(entry_price, color='#00e5ff', linestyle='--', linewidth=1.8, label='ENTRY')
-        main_ax.text(len(df) - 1, entry_price, f"  ENTRY {entry_price:.2f}", color='#00e5ff', verticalalignment='center', fontweight='bold', fontsize=9)
+        box_start_x = max(0, len(df) - 22)
+        box_end_x = len(df) + 4
+        box_width = box_end_x - box_start_x
+
+        # 1. Entry Line & Badge
+        main_ax.hlines(entry_price, box_start_x, box_end_x, colors='#00e5ff', linestyles='dotted', linewidth=1.6)
+        main_ax.text(
+            box_start_x + 1, entry_price, f"  {symbol} ENTRY {entry_price:.2f}",
+            color='#ffffff', fontsize=8.5, verticalalignment='center',
+            bbox=dict(boxstyle='round,pad=0.25', facecolor='#00838f', edgecolor='none', alpha=0.9)
+        )
         trade_plan_drawn = True
 
-        if sl_price is not None and sl_price > 0:
-            main_ax.axhline(sl_price, color='#ff1744', linestyle='--', linewidth=1.8, label='STOP LOSS')
-            main_ax.text(len(df) - 1, sl_price, f"  SL {sl_price:.2f}", color='#ff1744', verticalalignment='center', fontweight='bold', fontsize=9)
-            # Risk zone shading
-            main_ax.axhspan(min(entry_price, sl_price), max(entry_price, sl_price), color='#ff1744', alpha=0.10)
-
+        # 2. Take Profit Box (TradingView Green Box)
         if tp_price is not None and tp_price > 0:
-            main_ax.axhline(tp_price, color='#00e676', linestyle='--', linewidth=1.8, label='TAKE PROFIT')
-            main_ax.text(len(df) - 1, tp_price, f"  TP {tp_price:.2f}", color='#00e676', verticalalignment='center', fontweight='bold', fontsize=9)
-            # Reward zone shading
-            main_ax.axhspan(min(entry_price, tp_price), max(entry_price, tp_price), color='#00e676', alpha=0.10)
+            tp_bottom = min(entry_price, tp_price)
+            tp_height = abs(tp_price - entry_price)
+            rect_tp = patches.Rectangle(
+                (box_start_x, tp_bottom), box_width, tp_height,
+                facecolor='#26a69a', alpha=0.28, edgecolor='#00e676', linewidth=1.2, linestyle='-'
+            )
+            main_ax.add_patch(rect_tp)
+            main_ax.hlines(tp_price, box_start_x, box_end_x, colors='#00e676', linestyles='dotted', linewidth=1.8)
+            main_ax.text(
+                box_end_x - 1, tp_price, f"TP {tp_price:.2f}",
+                color='#ffffff', fontsize=8.5, verticalalignment='center', horizontalalignment='right',
+                bbox=dict(boxstyle='round,pad=0.25', facecolor='#2e7d32', edgecolor='none', alpha=0.9)
+            )
 
-        # Calculate R:R Ratio
+        # 3. Stop Loss Box (TradingView Red/Purple Risk Box)
+        if sl_price is not None and sl_price > 0:
+            sl_bottom = min(entry_price, sl_price)
+            sl_height = abs(sl_price - entry_price)
+            rect_sl = patches.Rectangle(
+                (box_start_x, sl_bottom), box_width, sl_height,
+                facecolor='#7e57c2' if (trade_action == 'SELL') else '#ef5350',
+                alpha=0.30, edgecolor='#ff1744', linewidth=1.2, linestyle='-'
+            )
+            main_ax.add_patch(rect_sl)
+            main_ax.hlines(sl_price, box_start_x, box_end_x, colors='#ff1744', linestyles='dotted', linewidth=1.8)
+            main_ax.text(
+                box_end_x - 1, sl_price, f"SL {sl_price:.2f}",
+                color='#ffffff', fontsize=8.5, verticalalignment='center', horizontalalignment='right',
+                bbox=dict(boxstyle='round,pad=0.25', facecolor='#c62828', edgecolor='none', alpha=0.9)
+            )
+
+        # 4. Risk / Reward Header Calculation
         if sl_price and tp_price:
             risk = abs(entry_price - sl_price)
             reward = abs(tp_price - entry_price)
             if risk > 0:
                 rr_val = round(reward / risk, 2)
                 rr_text = f"1:{rr_val} R:R"
-                action_str = f"{trade_action} " if trade_action else ""
-                main_ax.set_title(f"\n{symbol} ({timeframe}) | {action_str}Plan: Entry {entry_price:.2f} | SL {sl_price:.2f} | TP {tp_price:.2f} ({rr_text})", color='#ffffff', fontsize=12)
+                action_str = f"[{trade_action}] " if trade_action else ""
+                main_ax.set_title(
+                    f"\n{symbol} ({timeframe}) | {action_str}Target: {tp_price:.2f} | Stop: {sl_price:.2f} | Risk/Reward: {rr_text}",
+                    color='#ffffff', fontsize=11.5, fontweight='bold'
+                )
 
     # Save figure
     fig.savefig(str(out_file), dpi=150, bbox_inches='tight', facecolor='#131722')
