@@ -17,7 +17,7 @@ It equips AI assistants with full-duplex control over financial markets—rangin
 1. [Key Features](#-key-features)
 2. [The Trader's Journey (Workflow)](#-the-traders-journey-workflow)
 3. [System Architecture](#-system-architecture)
-4. [MCP Interface Specification (58 Tools)](#-mcp-interface-specification)
+4. [MCP Interface Specification (63 Tools)](#-mcp-interface-specification)
 5. [Institutional & ICT Strategy Models](#-institutional--ict-strategy-models)
 6. [Trading Credit Score Engine](#-trading-credit-score-engine-v40)
 7. [Smart Money Concepts (SMC) Analyzer](#-smart-money-concepts-smc-analyzer)
@@ -127,7 +127,7 @@ graph TD
 
 ## 📋 MCP Interface Specification
 
-### 1. Tools (58 Callable Functions)
+### 1. Tools (63 Callable Functions)
 
 #### 💼 Account & Terminal
 | Tool Name | Description | Parameters |
@@ -230,6 +230,15 @@ graph TD
 | `mt5_db_get_signal_history` | **Signal Audit Trail**: Retrieve historical bot signals, triggers, and execution statuses. | `symbol: Optional[str]`, `strategy: Optional[str]`, `limit: int = 50` |
 | `mt5_db_get_backtest_archive` | **Backtest Library**: Query archived historical backtest runs, win rates, and profit factors. | `symbol: Optional[str]`, `strategy: Optional[str]`, `limit: int = 20` |
 | `mt5_db_stats` | **Database Health**: View SQLite database size, file path, and record counts across all tables. | None |
+
+#### 🧠 AI Memory & Order Recall Suite (New)
+| Tool Name | Description | Parameters |
+|:---|:---|:---|
+| `mt5_recall_similar_trades` | **Past Setup Memory**: Recall past similar trades, historical Win Rate %, average profit, and AI lessons learned. | `symbol: Optional[str] = "XAUUSD"`, `strategy: Optional[str] = None`, `limit: int = 20` |
+| `mt5_recall_trading_mistakes` | **Safety Reflection**: Recall recent losing trades and AI reflections to serve as a pre-trade checklist. | `symbol: Optional[str] = None`, `days: int = 30`, `limit: int = 5` |
+| `mt5_recall_strategy_rankings` | **Strategy Leaderboard**: Aggregate and rank historical strategies by Win Rate % and expectancy. | `symbol: Optional[str] = None` |
+| `mt5_recall_recent_order` | **Emergency Undo Button**: Immediately close/recall the most recently opened market position (within N seconds) to reverse mistakes. | `symbol: Optional[str] = None`, `max_age_seconds: int = 120` |
+| `mt5_recall_all_pending_orders` | **Emergency Revocation**: Instantly revoke and cancel all active pending limit and stop orders in 1 click. | `symbol: Optional[str] = None` |
 
 ---
 

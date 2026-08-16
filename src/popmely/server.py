@@ -22,6 +22,7 @@ import popmely.tools.journal as journal_tool
 import popmely.tools.db_tools as db_tool
 import popmely.tools.news as news_tool
 import popmely.tools.chart as chart_tool
+import popmely.tools.recall as recall_tool
 
 # Setup standard logging to stderr
 logging.basicConfig(
@@ -689,7 +690,51 @@ def mt5_analyze_news_volatility(
     return news_tool.analyze_news_volatility(symbol=symbol, timeframe=timeframe, count=count)
 
 # =====================================================================
-# 11. MAIN ENTRYPOINT
+# 11. AI MEMORY & ORDER RECALL TOOLS
+# =====================================================================
+
+@mcp.tool()
+def mt5_recall_similar_trades(
+    symbol: Optional[str] = "XAUUSD",
+    strategy: Optional[str] = None,
+    limit: int = 20
+) -> dict:
+    """Recall Past Setups: Queries SQLite memory for similar past setups, computing historical Win Rate %, net profit, and AI lessons learned."""
+    return recall_tool.recall_similar_trades(symbol=symbol, strategy=strategy, limit=limit)
+
+@mcp.tool()
+def mt5_recall_trading_mistakes(
+    symbol: Optional[str] = None,
+    days: int = 30,
+    limit: int = 5
+) -> dict:
+    """Recall Trading Mistakes: Recalls recent losing trades and AI reflections to serve as a pre-trade psychological safety checklist."""
+    return recall_tool.recall_trading_mistakes(symbol=symbol, days=days, limit=limit)
+
+@mcp.tool()
+def mt5_recall_strategy_rankings(
+    symbol: Optional[str] = None
+) -> dict:
+    """Strategy Performance Leaderboard: Aggregates and ranks all historical strategies by Win Rate % and Expectancy per trade."""
+    return recall_tool.recall_strategy_rankings(symbol=symbol)
+
+@mcp.tool()
+def mt5_recall_recent_order(
+    symbol: Optional[str] = None,
+    max_age_seconds: int = 120
+) -> dict:
+    """Emergency Undo Button: Immediately close/recall the most recently opened market position (within max_age_seconds) to reverse an accidental trade."""
+    return recall_tool.recall_recent_order(symbol=symbol, max_age_seconds=max_age_seconds)
+
+@mcp.tool()
+def mt5_recall_all_pending_orders(
+    symbol: Optional[str] = None
+) -> dict:
+    """Instantly revoke and cancel all active pending limit and stop orders across the terminal."""
+    return recall_tool.recall_all_pending_orders(symbol=symbol)
+
+# =====================================================================
+# 12. MAIN ENTRYPOINT
 # =====================================================================
 
 def main():
