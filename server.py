@@ -11,6 +11,8 @@ import mcp_tools.market_data as market_tool
 import mcp_tools.analysis as analysis_tool
 import mcp_tools.risk_manager as risk_tool
 import mcp_tools.trading as trading_tool
+import mcp_tools.smc_analyzer as smc_tool
+import mcp_tools.backtest_engine as backtest_tool
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
@@ -167,6 +169,36 @@ def mt5_cancel_pending_order(ticket: int) -> dict:
 def mt5_get_trade_history(days: int = 7, symbol: Optional[str] = None) -> dict:
     """Get closed trade deals and profit history for the past N days."""
     return trading_tool.get_trade_history(days, symbol)
+
+# ----------------- Smart Money Concept (SMC) Tools -----------------
+
+@mcp.tool()
+def mt5_analyze_smc(symbol: str = "XAUUSD", timeframe: str = "M15", count: int = 150) -> dict:
+    """Perform Smart Money Concept (SMC) analysis: Break of Structure (BOS), Change of Character (CHoCH), Order Blocks (OB), Fair Value Gaps (FVG), Liquidity Pools (EQH/EQL), and Premium vs Discount zones."""
+    return smc_tool.analyze_smc(symbol, timeframe, count)
+
+# ----------------- Backtest Engine Tools -----------------
+
+@mcp.tool()
+def mt5_run_backtest(
+    symbol: str = "XAUUSD",
+    timeframe: str = "M15",
+    strategy: str = "smc",  # 'smc' or 'ema_rsi'
+    bars_count: int = 500,
+    start_balance: float = 10000.0,
+    risk_percent: float = 1.0,
+    rr_ratio: float = 2.0
+) -> dict:
+    """Run historical backtest simulation on MT5 candles and calculate performance metrics (Win Rate, Net Profit, Profit Factor, Max Drawdown, Trade logs)."""
+    return backtest_tool.run_backtest(
+        symbol=symbol,
+        timeframe=timeframe,
+        strategy=strategy,
+        bars_count=bars_count,
+        start_balance=start_balance,
+        risk_percent=risk_percent,
+        rr_ratio=rr_ratio
+    )
 
 if __name__ == "__main__":
     logger.info("Starting MT5 MCP Server on standard I/O transport...")

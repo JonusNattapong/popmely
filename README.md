@@ -19,10 +19,23 @@ A high-performance **Model Context Protocol (MCP) Server** that bridges **MetaTr
 ### 3. 📈 Automated Technical Analysis
 * `mt5_analyze_technical`: Calculates EMA (20/50/200), RSI (14), MACD, ATR (14), Bollinger Bands, and Key Support/Resistance levels automatically.
 
-### 4. 🧮 Risk Management & Lot Sizing
+### 4. 🧠 Smart Money Concepts (SMC) Analyzer (v2)
+* `mt5_analyze_smc`: Advanced institutional market structure analysis:
+  * **Break of Structure (BOS)** & **Change of Character (CHoCH)**
+  * **Unmitigated Order Blocks (OB)**
+  * **Fair Value Gaps (FVG / Imbalances)**
+  * **Liquidity Pools (Equal Highs / Equal Lows)**
+  * **Premium vs Discount Zones & OTE (Optimal Trade Entry 61.8%-78.6%)**
+
+### 5. 🔬 Backtest Engine (v2)
+* `mt5_run_backtest`: Fast bar-by-bar historical simulation:
+  * Supported Strategies: `smc` (BOS/FVG entries) & `ema_rsi` (Trend Pullback)
+  * Computes: Win Rate (%), Total Trades, Net Profit ($ / %), Profit Factor, Max Drawdown ($ / %), and detailed recent Trade Logs.
+
+### 6. 🧮 Risk Management & Lot Sizing
 * `mt5_calculate_lot_size`: Calculates optimal Lot Size according to risk in USD or % of equity, Stop Loss distance, and computes Risk/Reward ratio.
 
-### 5. ⚡ Trading & Position Management
+### 7. ⚡ Trading & Position Management
 * `mt5_place_order`: Execute Market BUY / SELL orders with Stop Loss, Take Profit, and Slippage controls.
 * `mt5_place_pending_order`: Place Buy Limit / Sell Limit / Buy Stop / Sell Stop orders.
 * `mt5_get_positions`: View all open positions and floating PnL.
