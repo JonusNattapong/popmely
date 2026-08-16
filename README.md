@@ -17,7 +17,7 @@ It equips AI assistants with full-duplex control over financial markets—rangin
 1. [Key Features](#-key-features)
 2. [The Trader's Journey (Workflow)](#-the-traders-journey-workflow)
 3. [System Architecture](#-system-architecture)
-4. [MCP Interface Specification (65 Tools)](#-mcp-interface-specification)
+4. [MCP Interface Specification (67 Tools)](#-mcp-interface-specification)
 5. [Institutional & ICT Strategy Models](#-institutional--ict-strategy-models)
 6. [Trading Credit Score Engine](#-trading-credit-score-engine-v40)
 7. [Smart Money Concepts (SMC) Analyzer](#-smart-money-concepts-smc-analyzer)
@@ -127,7 +127,7 @@ graph TD
 
 ## 📋 MCP Interface Specification
 
-### 1. Tools (65 Callable Functions)
+### 1. Tools (67 Callable Functions)
 
 #### 💼 Account & Terminal
 | Tool Name | Description | Parameters |
@@ -233,7 +233,7 @@ graph TD
 | `mt5_db_get_backtest_archive` | **Backtest Library**: Query archived historical backtest runs, win rates, and profit factors. | `symbol: Optional[str]`, `strategy: Optional[str]`, `limit: int = 20` |
 | `mt5_db_stats` | **Database Health**: View SQLite database size, file path, and record counts across all tables. | None |
 
-#### 🧠 AI Memory & Order Recall Suite (New)
+#### 🧠 AI Memory & Order Recall Suite
 | Tool Name | Description | Parameters |
 |:---|:---|:---|
 | `mt5_recall_similar_trades` | **Past Setup Memory**: Recall past similar trades, historical Win Rate %, average profit, and AI lessons learned. | `symbol: Optional[str] = "XAUUSD"`, `strategy: Optional[str] = None`, `limit: int = 20` |
@@ -241,6 +241,12 @@ graph TD
 | `mt5_recall_strategy_rankings` | **Strategy Leaderboard**: Aggregate and rank historical strategies by Win Rate % and expectancy. | `symbol: Optional[str] = None` |
 | `mt5_recall_recent_order` | **Emergency Undo Button**: Immediately close/recall the most recently opened market position (within N seconds) to reverse mistakes. | `symbol: Optional[str] = None`, `max_age_seconds: int = 120` |
 | `mt5_recall_all_pending_orders` | **Emergency Revocation**: Instantly revoke and cancel all active pending limit and stop orders in 1 click. | `symbol: Optional[str] = None` |
+
+#### ⚙️ Dynamic Configuration & Key Setup (New)
+| Tool Name | Description | Parameters |
+|:---|:---|:---|
+| `mt5_get_config` | **Inspect Settings**: View current runtime configuration settings, Telegram credentials, and safety limits (masked for security). | `masked: bool = True` |
+| `mt5_set_config` | **Dynamic Setup**: Configure Telegram Bot Token, Chat ID, Webhooks, Max Lot Size, and Risk Limits directly via MCP without server restart. | `telegram_bot_token: Optional[str]`, `telegram_chat_id: Optional[str]`, `webhook_url: Optional[str]`, `default_symbol: Optional[str]`, `max_lot_size: Optional[float]`, `max_daily_drawdown_percent: Optional[float]`, `require_sl: Optional[bool]`, `persist_to_env: bool = True` |
 
 ---
 

@@ -23,6 +23,7 @@ import popmely.tools.db_tools as db_tool
 import popmely.tools.news as news_tool
 import popmely.tools.chart as chart_tool
 import popmely.tools.recall as recall_tool
+import popmely.tools.config_tools as cfg_tool
 
 # Setup standard logging to stderr
 logging.basicConfig(
@@ -762,7 +763,43 @@ def mt5_recall_all_pending_orders(
     return recall_tool.recall_all_pending_orders(symbol=symbol)
 
 # =====================================================================
-# 12. MAIN ENTRYPOINT
+# 12. DYNAMIC CONFIGURATION & CREDENTIAL TOOLS
+# =====================================================================
+
+@mcp.tool()
+def mt5_get_config(masked: bool = True) -> dict:
+    """View current runtime configuration settings, Telegram setup, safety risk limits, and defaults (secrets masked for privacy)."""
+    return cfg_tool.get_config(masked=masked)
+
+@mcp.tool()
+def mt5_set_config(
+    telegram_bot_token: Optional[str] = None,
+    telegram_chat_id: Optional[str] = None,
+    webhook_url: Optional[str] = None,
+    default_symbol: Optional[str] = None,
+    default_magic: Optional[int] = None,
+    default_deviation: Optional[int] = None,
+    max_lot_size: Optional[float] = None,
+    max_daily_drawdown_percent: Optional[float] = None,
+    require_sl: Optional[bool] = None,
+    persist_to_env: bool = True
+) -> dict:
+    """Setup or update API keys, Telegram bot credentials, risk thresholds, and trading defaults dynamically at runtime without server restart."""
+    return cfg_tool.set_config(
+        telegram_bot_token=telegram_bot_token,
+        telegram_chat_id=telegram_chat_id,
+        webhook_url=webhook_url,
+        default_symbol=default_symbol,
+        default_magic=default_magic,
+        default_deviation=default_deviation,
+        max_lot_size=max_lot_size,
+        max_daily_drawdown_percent=max_daily_drawdown_percent,
+        require_sl=require_sl,
+        persist_to_env=persist_to_env
+    )
+
+# =====================================================================
+# 13. MAIN ENTRYPOINT
 # =====================================================================
 
 def main():
