@@ -410,17 +410,19 @@ def close_position(ticket: int, volume: Optional[float] = None) -> Dict[str, Any
         "type": close_type,
         "price": close_price,
         "deviation": config.DEFAULT_DEVIATION,
-        "magic": pos.magic,
         "comment": "AI_MCP_Close",
         "type_time": mt5.ORDER_TIME_GTC,
         "type_filling": mt5.ORDER_FILLING_IOC,
     }
 
-    check = mt5.order_check(request)
-    if check is None or check.retcode != mt5.TRADE_RETCODE_DONE:
-        request["type_filling"] = mt5.ORDER_FILLING_RETURN
+    # Try filling modes in order of broker compatibility
+    result = None
+    for filling in [mt5.ORDER_FILLING_IOC, mt5.ORDER_FILLING_FOK, mt5.ORDER_FILLING_RETURN]:
+        request["type_filling"] = filling
+        result = mt5.order_send(request)
+        if result is not None and result.retcode == mt5.TRADE_RETCODE_DONE:
+            break
 
-    result = mt5.order_send(request)
     if result is None or result.retcode != mt5.TRADE_RETCODE_DONE:
         err = result.comment if result else str(mt5.last_error())
         return {"status": "error", "message": f"Failed to close position #{ticket}: {err}"}
