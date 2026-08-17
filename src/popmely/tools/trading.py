@@ -36,8 +36,32 @@ def place_order(
     if tick is None:
         return {"status": "error", "message": f"Cannot get tick for '{symbol}'"}
 
+    info = mt5.symbol_info(symbol)
+    if info is None:
+        return {"status": "error", "message": f"Symbol info not found for '{symbol}'"}
+
+    point = info.point
+    digits = info.digits
+    min_stop_dist = float(info.trade_stops_level or 0) * point
+
     order_type = mt5.ORDER_TYPE_BUY if action_upper == "BUY" else mt5.ORDER_TYPE_SELL
     price = tick.ask if action_upper == "BUY" else tick.bid
+
+    # Normalize SL / TP and adjust to broker minimum stops level if needed
+    final_sl = round(float(sl), digits) if sl is not None and sl > 0 else 0.0
+    final_tp = round(float(tp), digits) if tp is not None and tp > 0 else 0.0
+
+    if min_stop_dist > 0:
+        if action_upper == "BUY":
+            if final_sl > 0 and (tick.bid - final_sl) < min_stop_dist:
+                final_sl = round(tick.bid - min_stop_dist - (2 * point), digits)
+            if final_tp > 0 and (final_tp - tick.ask) < min_stop_dist:
+                final_tp = round(tick.ask + min_stop_dist + (2 * point), digits)
+        else: # SELL
+            if final_sl > 0 and (final_sl - tick.ask) < min_stop_dist:
+                final_sl = round(tick.ask + min_stop_dist + (2 * point), digits)
+            if final_tp > 0 and (tick.bid - final_tp) < min_stop_dist:
+                final_tp = round(tick.bid - min_stop_dist - (2 * point), digits)
 
     request = {
         "action": mt5.TRADE_ACTION_DEAL,
@@ -45,8 +69,8 @@ def place_order(
         "volume": float(volume),
         "type": order_type,
         "price": float(price),
-        "sl": float(sl) if sl is not None else 0.0,
-        "tp": float(tp) if tp is not None else 0.0,
+        "sl": final_sl,
+        "tp": final_tp,
         "deviation": deviation or config.DEFAULT_DEVIATION,
         "magic": magic or config.DEFAULT_MAGIC,
         "comment": comment,
@@ -54,14 +78,30 @@ def place_order(
         "type_filling": mt5.ORDER_FILLING_IOC,
     }
 
-    check = mt5.order_check(request)
-    if check is None or check.retcode != mt5.TRADE_RETCODE_DONE:
-        request["type_filling"] = mt5.ORDER_FILLING_RETURN
-        check = mt5.order_check(request)
-        if check is None or check.retcode != mt5.TRADE_RETCODE_DONE:
-            request["type_filling"] = mt5.ORDER_FILLING_FOK
+    # Try filling modes
+    result = None
+    for filling in [mt5.ORDER_FILLING_IOC, mt5.ORDER_FILLING_RETURN, mt5.ORDER_FILLING_FOK]:
+        request["type_filling"] = filling
+        result = mt5.order_send(request)
+        if result is not None and result.retcode == mt5.TRADE_RETCODE_DONE:
+            break
 
-    result = mt5.order_send(request)
+    # ECN / 2-Step Fallback: If broker rejects SL/TP during initial market entry (retcode 10016)
+    if result is not None and result.retcode == 10016 and (final_sl > 0 or final_tp > 0):
+        # Open order without SL/TP first
+        req_nosl = dict(request)
+        req_nosl["sl"] = 0.0
+        req_nosl["tp"] = 0.0
+        for filling in [mt5.ORDER_FILLING_IOC, mt5.ORDER_FILLING_RETURN, mt5.ORDER_FILLING_FOK]:
+            req_nosl["type_filling"] = filling
+            result = mt5.order_send(req_nosl)
+            if result is not None and result.retcode == mt5.TRADE_RETCODE_DONE:
+                # Immediately attach SL / TP via modify
+                import time
+                time.sleep(0.1)
+                modify_position(ticket=result.order, sl=final_sl, tp=final_tp)
+                break
+
     if result is None:
         return {"status": "error", "message": f"Order send failed: {mt5.last_error()}"}
 
@@ -79,6 +119,8 @@ def place_order(
         "deal_ticket": result.deal,
         "volume": result.volume,
         "price": result.price,
+        "sl": final_sl,
+        "tp": final_tp,
         "comment": result.comment,
         "symbol": symbol,
         "action": action_upper
@@ -363,12 +405,34 @@ def modify_position(ticket: int, sl: Optional[float] = None, tp: Optional[float]
         return {"status": "error", "message": f"Position ticket #{ticket} not found"}
 
     pos = positions[0]
+    info = mt5.symbol_info(pos.symbol)
+    tick = mt5.symbol_info_tick(pos.symbol)
+    digits = info.digits if info else 2
+    point = info.point if info else 0.01
+    min_stop_dist = (float(info.trade_stops_level or 0) * point) if info else 0.0
+
+    final_sl = round(float(sl), digits) if sl is not None and sl > 0 else (pos.sl if sl is None else 0.0)
+    final_tp = round(float(tp), digits) if tp is not None and tp > 0 else (pos.tp if tp is None else 0.0)
+
+    # Validate against live prices and stops level
+    if tick and min_stop_dist > 0:
+        if pos.type == mt5.ORDER_TYPE_BUY:
+            if final_sl > 0 and (tick.bid - final_sl) < min_stop_dist:
+                final_sl = round(tick.bid - min_stop_dist - (2 * point), digits)
+            if final_tp > 0 and (final_tp - tick.ask) < min_stop_dist:
+                final_tp = round(tick.ask + min_stop_dist + (2 * point), digits)
+        else: # SELL
+            if final_sl > 0 and (final_sl - tick.ask) < min_stop_dist:
+                final_sl = round(tick.ask + min_stop_dist + (2 * point), digits)
+            if final_tp > 0 and (tick.bid - final_tp) < min_stop_dist:
+                final_tp = round(tick.bid - min_stop_dist - (2 * point), digits)
+
     request = {
         "action": mt5.TRADE_ACTION_SLTP,
         "position": ticket,
         "symbol": pos.symbol,
-        "sl": float(sl) if sl is not None else pos.sl,
-        "tp": float(tp) if tp is not None else pos.tp
+        "sl": final_sl,
+        "tp": final_tp
     }
 
     result = mt5.order_send(request)
@@ -379,8 +443,9 @@ def modify_position(ticket: int, sl: Optional[float] = None, tp: Optional[float]
     return {
         "status": "success",
         "ticket": ticket,
-        "sl": request["sl"],
-        "tp": request["tp"]
+        "sl": final_sl,
+        "tp": final_tp,
+        "message": f"Position #{ticket} SL/TP updated successfully (SL: {final_sl}, TP: {final_tp})"
     }
 
 def close_position(ticket: int, volume: Optional[float] = None) -> Dict[str, Any]:
