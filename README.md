@@ -1,6 +1,6 @@
 # popmely: MetaTrader 5 (MT5) Model Context Protocol (MCP) Server
 
-[![Version](https://img.shields.io/badge/version-5.0.0-blue.svg?style=flat-square)](https://github.com/JonusNattapong/popmely)
+[![Version](https://img.shields.io/badge/version-5.0.0-blue.svg?style=flat-square)](https://github.com/JonusNattapong/mcp-mt5)
 [![Python](https://img.shields.io/badge/python-3.10%2B-brightgreen.svg?style=flat-square)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg?style=flat-square)](LICENSE)
 [![MCP](https://img.shields.io/badge/MCP-FastMCP%20Standard-purple.svg?style=flat-square)](https://modelcontextprotocol.io/)
@@ -376,8 +376,8 @@ sequenceDiagram
 
 ```powershell
 # 1. Clone the repository
-git clone https://github.com/JonusNattapong/popmely.git
-cd popmely
+git clone https://github.com/JonusNattapong/mcp-mt5.git
+cd mcp-mt5
 
 # 2. Create and activate virtual environment
 python -m venv .venv
