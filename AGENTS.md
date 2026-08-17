@@ -33,6 +33,10 @@ popmely/
 │   │   └── scoring.py             # Trading Credit Score logic engine
 │   ├── db/
 │   │   └── __init__.py            # Embedded SQLite engine (~/.popmely/popmely.db with WAL mode)
+│   ├── dashboard/
+│   │   ├── queries.py             # Read-only (SELECT) query layer over the SQLite database
+│   │   ├── server.py              # Stdlib HTTP server for the browser dashboard (no deps)
+│   │   └── static/                # index.html + dashboard.css + dashboard.js (offline, no CDN)
 │   ├── tools/
 │   │   ├── account.py             # Account equity, balance, and terminal status
 │   │   ├── market_data.py         # Quotes, symbols, OHLCV candle ranges
@@ -137,8 +141,14 @@ python -m popmely --transport sse --host 127.0.0.1 --port 8000
 # Launch Live Streaming Terminal Dashboard
 python -m popmely.live --symbol XAUUSD --interval 2
 
+# Launch Web Data Dashboard (read-only browser view of the SQLite database)
+python -m popmely.dashboard --port 8787
+
 # Inspect SQLite Database
 python -c "from popmely.tools.db_tools import db_stats; print(db_stats())"
+
+# Run Dashboard Test Suite (no MT5 terminal required)
+python -m unittest discover -s tests -p "test_dashboard.py"
 
 # Test Full Suite
 python -c "from popmely.server import mcp; print(f'Total Registered Tools: {len(mcp._tool_manager._tools)}')"

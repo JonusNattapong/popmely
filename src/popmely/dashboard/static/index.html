@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>popmely — Trading Data Dashboard</title>
+<link rel="stylesheet" href="/static/dashboard.css">
+</head>
+<body>
+<div class="wrap" id="wrap">
+
+  <header class="masthead">
+    <div>
+      <h1>popmely — Trading Data Dashboard</h1>
+      <div class="meta">
+        <span id="db-path"><code>~/.popmely/popmely.db</code></span>
+        · <span id="db-size">—</span>
+        · <span id="db-records">—</span>
+        · updated <span id="updated">—</span>
+      </div>
+    </div>
+    <div class="controls">
+      <button id="btn-refresh" type="button" title="Reload from the database">Refresh</button>
+      <button id="btn-auto" type="button" aria-pressed="false" title="Reload every 15 seconds">Auto-refresh: off</button>
+      <button id="btn-theme" type="button" title="Switch light/dark">Theme</button>
+    </div>
+  </header>
+
+  <div id="banner-slot"></div>
+
+  <!-- Hero: the one number the dashboard leads with -->
+  <div class="card" id="hero-card" style="margin-bottom:16px"></div>
+
+  <div class="grid kpis" id="kpi-row"></div>
+
+  <div class="grid halves">
+    <div class="card" id="card-score-history"></div>
+    <div class="card" id="card-strategies"></div>
+  </div>
+
+  <h2 class="section-title">Bot signals</h2>
+  <div class="card" id="card-signals"></div>
+
+  <h2 class="section-title">Trade journal</h2>
+  <div class="card" id="card-journal"></div>
+
+  <h2 class="section-title">Backtest archive</h2>
+  <div class="card" id="card-backtests"></div>
+
+  <h2 class="section-title">Credit score events</h2>
+  <div class="card" id="card-events"></div>
+
+  <p class="footnote">
+    Read-only view. Nothing here writes to the database — record trades with the
+    popmely MCP tools (<code>mt5_db_add_trade_note</code>, <code>mt5_score_deduct</code>, …).
+  </p>
+
+</div>
+
+<script src="/static/dashboard.js"></script>
+</body>
+</html>

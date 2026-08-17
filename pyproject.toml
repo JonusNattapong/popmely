@@ -42,6 +42,7 @@ dependencies = [
 popmely = "popmely.server:main"
 mcp-server-popmely = "popmely.server:main"
 popmely-live = "popmely.live:main"
+popmely-dashboard = "popmely.dashboard.server:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/popmely"]
