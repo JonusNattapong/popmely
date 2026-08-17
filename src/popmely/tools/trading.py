@@ -884,3 +884,102 @@ def get_trade_history_range(
         "total_realized_pnl_usd": total_profit,
         "deals": data
     }
+
+
+def execute_rapid_scalp(
+    symbol: str = "XAUUSD",
+    direction: str = "AUTO",
+    volume: float = 0.05,
+    sl_points: float = 35.0,
+    tp_points: float = 70.0,
+    max_spread_points: float = 30.0,
+    comment: str = "Rapid_Scalp_Sniper"
+) -> Dict[str, Any]:
+    """High-Speed Second-by-Second Sniper Scalping: Enters lightning-fast market scalp on M1/tick momentum with ultra-tight SL, 1:2 R:R TP, and spread filter."""
+    if not MT5ConnectionManager.ensure_connected():
+        return {"status": "error", "message": "MT5 not connected"}
+
+    if not mt5.symbol_select(symbol, True):
+        return {"status": "error", "message": f"Failed to select symbol '{symbol}'"}
+
+    info = mt5.symbol_info(symbol)
+    tick = mt5.symbol_info_tick(symbol)
+    if not info or not tick:
+        return {"status": "error", "message": f"Cannot get live tick data for {symbol}"}
+
+    point = info.point
+    spread_points = (tick.ask - tick.bid) / point
+
+    # Spread Protection Filter
+    if spread_points > max_spread_points:
+        return {
+            "status": "warning",
+            "message": f"Scalp aborted: Current spread ({spread_points:.1f} pts) exceeds maximum allowed spread ({max_spread_points:.1f} pts) for tight scalping.",
+            "spread_points": spread_points
+        }
+
+    # Auto Momentum Direction Detector (M1 Fast EMA & RSI)
+    dir_upper = direction.upper()
+    if dir_upper == "AUTO":
+        rates = mt5.copy_rates_from_pos(symbol, mt5.TIMEFRAME_M1, 0, 20)
+        if rates is not None and len(rates) >= 15:
+            import pandas as pd
+            df_m1 = pd.DataFrame(rates)
+            ema3 = df_m1['close'].ewm(span=3, adjust=False).mean().iloc[-1]
+            ema8 = df_m1['close'].ewm(span=8, adjust=False).mean().iloc[-1]
+            delta = df_m1['close'].diff()
+            gain = (delta.where(delta > 0, 0)).rolling(7).mean().iloc[-1]
+            loss = (-delta.where(delta < 0, 0)).rolling(7).mean().iloc[-1]
+            rs = (gain / loss) if loss != 0 else 1.0
+            rsi7 = 100 - (100 / (1 + rs))
+
+            if ema3 > ema8 and rsi7 > 45:
+                dir_upper = "BUY"
+            else:
+                dir_upper = "SELL"
+        else:
+            dir_upper = "BUY"
+
+    # Respect Broker Minimum Stops Level
+    min_stop_points = float(info.trade_stops_level or 0)
+    actual_sl_points = max(sl_points, min_stop_points + 10.0) if min_stop_points > 0 else sl_points
+    actual_tp_points = max(tp_points, min_stop_points * 2) if min_stop_points > 0 else tp_points
+
+    # Calculate Precise SL and TP
+    if dir_upper == "BUY":
+        entry = tick.ask
+        sl = entry - (actual_sl_points * point)
+        tp = entry + (actual_tp_points * point)
+    else:
+        entry = tick.bid
+        sl = entry + (actual_sl_points * point)
+        tp = entry - (actual_tp_points * point)
+
+    # Execute Instant Market Order
+    res = place_order(
+        symbol=symbol,
+        action=dir_upper,
+        volume=volume,
+        sl=round(sl, info.digits),
+        tp=round(tp, info.digits),
+        comment=comment
+    )
+
+    if res.get("status") == "success":
+        return {
+            "status": "success",
+            "mode": "RAPID_FIRE_SCALP",
+            "action": dir_upper,
+            "symbol": symbol,
+            "volume": volume,
+            "ticket": res.get("ticket"),
+            "entry_price": entry,
+            "sl_price": round(sl, info.digits),
+            "tp_price": round(tp, info.digits),
+            "sl_points": sl_points,
+            "tp_points": tp_points,
+            "spread_points": round(spread_points, 1),
+            "message": f"⚡ Rapid Scalp executed: {dir_upper} {volume} lots @ {entry:.2f} (SL: -{sl_points} pts | TP: +{tp_points} pts)"
+        }
+    return res
+

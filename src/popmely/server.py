@@ -432,6 +432,27 @@ def mt5_get_trade_history_range(
     return trading_tool.get_trade_history_range(start_time, end_time, symbol)
 
 @mcp.tool()
+def mt5_execute_rapid_scalp(
+    symbol: str = "XAUUSD",
+    direction: str = "AUTO",
+    volume: float = 0.05,
+    sl_points: float = 35.0,
+    tp_points: float = 70.0,
+    max_spread_points: float = 30.0,
+    comment: str = "Rapid_Scalp_Sniper"
+) -> dict:
+    """High-Speed Second-by-Second Sniper Scalping: Enters lightning-fast market scalp on M1/tick momentum with ultra-tight SL, 1:2 R:R TP, and live spread protection filter."""
+    return trading_tool.execute_rapid_scalp(
+        symbol=symbol,
+        direction=direction,
+        volume=volume,
+        sl_points=sl_points,
+        tp_points=tp_points,
+        max_spread_points=max_spread_points,
+        comment=comment
+    )
+
+@mcp.tool()
 def mt5_get_trade_journal(
     days: int = 7,
     symbol: Optional[str] = None

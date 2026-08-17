@@ -17,17 +17,18 @@ It equips AI assistants with full-duplex control over financial markets—rangin
 1. [Key Features](#-key-features)
 2. [The Trader's Journey (Workflow)](#-the-traders-journey-workflow)
 3. [System Architecture](#-system-architecture)
-4. [MCP Interface Specification (73 Tools)](#-mcp-interface-specification)
+4. [MCP Interface Specification (74 Tools)](#-mcp-interface-specification)
 5. [Institutional & ICT Strategy Models](#-institutional--ict-strategy-models)
 6. [Trading Credit Score Engine](#-trading-credit-score-engine-v40)
 7. [Smart Money Concepts (SMC) Analyzer](#-smart-money-concepts-smc-analyzer)
 8. [Autonomous Trading Agent](#-autonomous-trading-agent)
 9. [Installation & Quickstart Guide](#-installation--quickstart-guide)
 10. [Client Configuration](#-client-configuration)
-11. [Configuration Parameters](#-configuration-parameters)
-12. [Project Evolution Journey (Changelog)](#-project-evolution-journey)
-13. [Development & Testing](#-development--testing)
-14. [Risk Disclaimer](#-risk-disclaimer)
+11. [Web Data Dashboard](#-web-data-dashboard-browser)
+12. [Configuration Parameters](#-configuration-parameters)
+13. [Project Evolution Journey (Changelog)](#-project-evolution-journey)
+14. [Development & Testing](#-development--testing)
+15. [Risk Disclaimer](#-risk-disclaimer)
 
 ---
 
@@ -127,7 +128,7 @@ graph TD
 
 ## 📋 MCP Interface Specification
 
-### 1. Tools (73 Callable Functions)
+### 1. Tools (74 Callable Functions)
 
 #### 💼 Account & Terminal
 | Tool Name | Description | Parameters |
@@ -201,6 +202,7 @@ graph TD
 | `mt5_cancel_all_pending_orders` | Cancel all active pending orders across terminal in one click. | `symbol: str = ""` |
 | `mt5_get_trade_history` | Retrieve closed trade logs and historical deals for past N days. | `days: int = 7` |
 | `mt5_get_trade_history_range` | **Date Range PnL & Deals**: Retrieve closed trades and win rate stats between specific dates. | `start_time: str`, `end_time: Optional[str] = None`, `symbol: Optional[str] = None` |
+| `mt5_execute_rapid_scalp` | **Second-by-Second Sniper Scalp**: High-speed M1/tick momentum scalp with ultra-tight SL, 1:2 R:R TP, and spread protection. | `symbol: str = "XAUUSD"`, `direction: str = "AUTO"`, `volume: float = 0.05`, `sl_points: float = 35.0`, `tp_points: float = 70.0`, `max_spread_points: float = 30.0` |
 | `mt5_get_trade_journal` | **AI Trade Journey & Journal**: Generates detailed trade journey logs, R:R analytics, Credit Score impact, and AI feedback. | `days: int = 7`, `symbol: Optional[str] = None` |
 
 #### 🤖 Autonomous Agent Management & Notifications
@@ -514,6 +516,30 @@ python -m popmely.live --symbol BTCUSD --interval 1 --auto-trade
     [17:15:04] ⚡ Order executed: BUY 0.10 XAUUSD @ 4375.50 (Ticket #1234567).
 ==================================================================================
 ```
+
+---
+
+## 📊 Web Data Dashboard (Browser)
+
+A local, read-only web dashboard over the persistent SQLite database — Credit Score trajectory, bot signal performance, trade journal, and backtest archive in one page. It holds **no MT5 connection** and issues **SELECT statements only**, so it is safe to leave open while the bot trades.
+
+```bash
+# Start on http://127.0.0.1:8787 (opens your browser)
+python -m popmely.dashboard
+
+# Custom port, no browser popup, alternate database file
+popmely-dashboard --port 9000 --no-browser --db ~/.popmely/popmely.db
+```
+
+| Section | What it shows |
+|:---|:---|
+| **Hero + meter** | Current Credit Score, tier, lot-size multiplier, and the tier bands |
+| **KPI row** | Win/loss streaks, signals logged, signal win rate, journaled P&L, avg confluence, backtest count |
+| **Credit score trajectory** | Score after every recorded event, with hover detail and a table view |
+| **Signals by strategy** | Signal volume per strategy, with execution and outcome detail on hover |
+| **Tables** | Recent signals, trade journal notes, backtest archive, full score event log |
+
+Built on the Python standard library — **no extra dependencies**, no CDN, works offline. It reads `~/.popmely/popmely.db`; if that file does not exist yet, the page renders an empty state rather than failing. Use `--host 0.0.0.0` only on a trusted network: the dashboard has no authentication.
 
 ---
 
