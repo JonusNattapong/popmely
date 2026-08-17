@@ -484,12 +484,38 @@
     try {
       const res = await fetch("/api/data", { cache: "no-store" });
       render(await res.json());
+
+      const goalRes = await fetch("/api/goal", { cache: "no-store" });
+      const goal = await goalRes.json();
+      renderGoal(goal);
     } catch (e) {
       $("banner-slot").innerHTML =
         `<div class="banner"><strong>Could not reach the dashboard server.</strong> ${esc(e.message)}</div>`;
     } finally {
       $("wrap").classList.remove("loading");
     }
+  }
+
+  function renderGoal(g) {
+    const host = $("challenge-slot");
+    if (!g || !g.running) {
+      host.innerHTML = "";
+      return;
+    }
+    const pct = Math.max(0, Math.min(100, g.progress_percent));
+    host.innerHTML = `
+      <div class="card" style="margin-bottom:16px; border-left: 4px solid var(--status-good)">
+        <h2>Micro-Account Challenge: $${esc(g.initial_balance ?? 31)} to $${esc(g.target_balance)}</h2>
+        <div style="margin-top: 12px; display: flex; justify-content: space-between; font-size: 14px;">
+          <span>Current: <strong>${fmtMoney(g.current_equity)}</strong></span>
+          <span>Target: <strong>${fmtMoney(g.target_balance)}</strong></span>
+        </div>
+        <div class="meter-track" style="margin-top: 8px; height: 12px; border-radius: 6px;">
+          <div class="meter-fill" style="width:${pct}%; background:var(--status-good); border-radius: 6px;"></div>
+        </div>
+        <p class="sub" style="margin-top:8px;">Progress: ${pct.toFixed(2)}% · Trades: ${g.trades_executed} · Peak: ${fmtMoney(g.highest_equity)}</p>
+      </div>
+    `;
   }
 
   // -- controls ----------------------------------------------------------

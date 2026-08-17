@@ -1,5 +1,6 @@
 from typing import Dict, Any, Optional
 from popmely.agent.bot_engine import bot_agent
+from popmely.agent.goal_engine import goal_engine
 from popmely.agent.notifier import notifier
 
 def agent_start(
@@ -63,3 +64,30 @@ def send_telegram_photo(
     if not photo_path:
         return {"status": "error", "message": "photo_path is required"}
     return notifier.send_telegram_photo(photo_path=photo_path, caption=caption, token=token, chat_id=chat_id)
+
+def goal_start(
+    symbol: str = "XAUUSD",
+    initial_balance: float = 31.0,
+    target_balance: float = 1000.0,
+    scan_interval: int = 1,
+    risk_per_trade_usd: float = 2.0
+) -> Dict[str, Any]:
+    """Start the Autonomous Goal-Driven Trading Engine."""
+    return goal_engine.start(
+        symbol=symbol,
+        initial_balance=initial_balance,
+        target_balance=target_balance,
+        scan_interval=scan_interval,
+        risk_per_trade_usd=risk_per_trade_usd
+    )
+
+def goal_stop() -> Dict[str, Any]:
+    """Stop the Autonomous Goal-Driven Trading Engine."""
+    return goal_engine.stop()
+
+def goal_status() -> Dict[str, Any]:
+    """Get the live status and progress of the Goal-Driven Trading Engine."""
+    return {
+        "status": "success",
+        "goal_engine": goal_engine.get_status()
+    }

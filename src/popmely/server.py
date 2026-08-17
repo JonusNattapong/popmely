@@ -500,6 +500,33 @@ def mt5_agent_status() -> dict:
     return agent_tool.agent_status()
 
 @mcp.tool()
+def mt5_goal_start(
+    symbol: str = "XAUUSD",
+    initial_balance: float = 31.0,
+    target_balance: float = 1000.0,
+    scan_interval: int = 1,
+    risk_per_trade_usd: float = 2.0
+) -> dict:
+    """Start the Goal-Driven Micro-Account Engine (e.g. $31 to $1,000 Challenge). Uses rapid scalping and auto-compounds risk as equity grows."""
+    return agent_tool.goal_start(
+        symbol=symbol,
+        initial_balance=initial_balance,
+        target_balance=target_balance,
+        scan_interval=scan_interval,
+        risk_per_trade_usd=risk_per_trade_usd
+    )
+
+@mcp.tool()
+def mt5_goal_stop() -> dict:
+    """Stop the Goal-Driven Trading Engine."""
+    return agent_tool.goal_stop()
+
+@mcp.tool()
+def mt5_goal_status() -> dict:
+    """Get the live status and progress bar of the Goal-Driven Trading Engine."""
+    return agent_tool.goal_status()
+
+@mcp.tool()
 def mt5_send_test_alert(message: str = "Test alert from popmely AI trading bot!") -> dict:
     """Send a test notification to Telegram or configured Webhook."""
     return agent_tool.send_test_alert(message)

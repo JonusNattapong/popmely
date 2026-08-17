@@ -25,7 +25,7 @@ popmely/
 ├── src/popmely/
 │   ├── __init__.py                # Package version (v5.0.0)
 │   ├── config.py                  # Runtime configuration & environment variables
-│   ├── server.py                  # MCP Server entrypoint (67 Tools, 4 Resources, 2 Prompts)
+│   ├── server.py                  # MCP Server entrypoint (74 Tools, 4 Resources, 2 Prompts)
 │   ├── live.py                    # Real-time terminal streaming dashboard console
 │   ├── agent/
 │   │   ├── bot_engine.py          # Autonomous background worker thread
@@ -59,7 +59,7 @@ popmely/
 
 ---
 
-## 🛠️ 3. Agent Tool Call Taxonomy (67 Tools)
+## 🛠️ 3. Agent Tool Call Taxonomy (74 Tools)
 
 When planning execution, map your intent to the appropriate tool group:
 

@@ -41,6 +41,13 @@ class DashboardHandler(BaseHTTPRequestHandler):
             self._send_json(queries.collect(self.db_path))
         elif path == "/api/health":
             self._send_json({"status": "ok", "database": str(self.db_path)})
+        elif path == "/api/goal":
+            chal_path = Path.home() / ".popmely" / "challenge.json"
+            if chal_path.exists():
+                with open(chal_path, "r") as f:
+                    self._send_json(json.load(f))
+            else:
+                self._send_json({"running": False})
         elif path.startswith("/static/"):
             self._send_static(path[len("/static/"):])
         elif path == "/favicon.ico":
