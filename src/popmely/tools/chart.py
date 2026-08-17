@@ -153,20 +153,31 @@ def generate_candlestick_chart(
                 main_ax.text(start_x + 0.5, (ob['top'] + ob['bottom']) / 2, f"  +{ob['type']}", color=ob_color, fontsize=8, verticalalignment='center', fontweight='bold')
                 smc_annotations_count += 1
 
-    # Overlay TradingView-style Long/Short Position Box Widget (Bounded SL/TP Box)
+    # Overlay TradingView-style Long/Short Position Box Widget (Projected Forward into Future Space)
     trade_plan_drawn = False
     rr_text = None
     if entry_price is not None and entry_price > 0:
-        box_start_x = max(0, len(df) - 22)
-        box_end_x = len(df) + 4
+        box_start_x = len(df) - 2
+        box_end_x = len(df) + 16
         box_width = box_end_x - box_start_x
 
+        # Extend chart X-axis to the right for future projection space
+        main_ax.set_xlim(left=-1, right=len(df) + 18)
+        if len(axlist) > 1:
+            axlist[1].set_xlim(left=-1, right=len(df) + 18)
+
+        # Ensure Y-axis accommodates Entry, SL, and TP comfortably
+        y_min, y_max = main_ax.get_ylim()
+        all_prices = [p for p in [y_min, y_max, entry_price, sl_price, tp_price] if p is not None and p > 0]
+        pad = (max(all_prices) - min(all_prices)) * 0.08
+        main_ax.set_ylim(bottom=min(all_prices) - pad, top=max(all_prices) + pad)
+
         # 1. Entry Line & Badge
-        main_ax.hlines(entry_price, box_start_x, box_end_x, colors='#00e5ff', linestyles='dotted', linewidth=1.6)
+        main_ax.hlines(entry_price, box_start_x, box_end_x, colors='#00e5ff', linestyles='--', linewidth=1.6)
         main_ax.text(
-            box_start_x + 1, entry_price, f"  {symbol} ENTRY {entry_price:.2f}",
-            color='#ffffff', fontsize=8.5, verticalalignment='center',
-            bbox=dict(boxstyle='round,pad=0.25', facecolor='#00838f', edgecolor='none', alpha=0.9)
+            box_start_x, entry_price, f" {symbol} ENTRY {entry_price:.2f} ",
+            color='#ffffff', fontsize=8.5, verticalalignment='center', fontweight='bold',
+            bbox=dict(boxstyle='round,pad=0.3', facecolor='#00838f', edgecolor='#00e5ff', alpha=0.95)
         )
         trade_plan_drawn = True
 
@@ -179,11 +190,11 @@ def generate_candlestick_chart(
                 facecolor='#26a69a', alpha=0.28, edgecolor='#00e676', linewidth=1.2, linestyle='-'
             )
             main_ax.add_patch(rect_tp)
-            main_ax.hlines(tp_price, box_start_x, box_end_x, colors='#00e676', linestyles='dotted', linewidth=1.8)
+            main_ax.hlines(tp_price, box_start_x, box_end_x, colors='#00e676', linestyles='--', linewidth=1.6)
             main_ax.text(
-                box_end_x - 1, tp_price, f"TP {tp_price:.2f}",
-                color='#ffffff', fontsize=8.5, verticalalignment='center', horizontalalignment='right',
-                bbox=dict(boxstyle='round,pad=0.25', facecolor='#2e7d32', edgecolor='none', alpha=0.9)
+                box_end_x, tp_price, f" TP {tp_price:.2f} ",
+                color='#ffffff', fontsize=8.5, verticalalignment='center', horizontalalignment='right', fontweight='bold',
+                bbox=dict(boxstyle='round,pad=0.3', facecolor='#2e7d32', edgecolor='#00e676', alpha=0.95)
             )
 
         # 3. Stop Loss Box (TradingView Red/Purple Risk Box)
@@ -196,11 +207,11 @@ def generate_candlestick_chart(
                 alpha=0.30, edgecolor='#ff1744', linewidth=1.2, linestyle='-'
             )
             main_ax.add_patch(rect_sl)
-            main_ax.hlines(sl_price, box_start_x, box_end_x, colors='#ff1744', linestyles='dotted', linewidth=1.8)
+            main_ax.hlines(sl_price, box_start_x, box_end_x, colors='#ff1744', linestyles='--', linewidth=1.6)
             main_ax.text(
-                box_end_x - 1, sl_price, f"SL {sl_price:.2f}",
-                color='#ffffff', fontsize=8.5, verticalalignment='center', horizontalalignment='right',
-                bbox=dict(boxstyle='round,pad=0.25', facecolor='#c62828', edgecolor='none', alpha=0.9)
+                box_end_x, sl_price, f" SL {sl_price:.2f} ",
+                color='#ffffff', fontsize=8.5, verticalalignment='center', horizontalalignment='right', fontweight='bold',
+                bbox=dict(boxstyle='round,pad=0.3', facecolor='#c62828', edgecolor='#ff1744', alpha=0.95)
             )
 
         # 4. Risk / Reward Header Calculation
